@@ -1,0 +1,218 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jul  4 18:23:03 2023
+
+@author: Farideh
+"""
+import numpy as np
+import os
+import logging
+from scipy.stats import binom_test, nbinom
+from sklearn.utils import resample
+import statsmodels as sm
+import sys
+import pandas as pd 
+from statsmodels.regression.linear_model import OLS
+from statsmodels.sandbox.stats.multicomp import multipletests
+logger = logging.getLogger('INFER')
+from simulation_settings import load_sim_settings_perBatchPerf
+from readFtrs_Rspns import read_response
+from performance.assessModels import read_pred
+
+def dispersion_test(yhat, y, k=100):
+    """ Implement the regression based dispersion test with k re-sampling.
+    Args:
+        yhat (np.array): predicted mutation count
+        y (np.array): observed mutation count
+        k (int):
+            
+    Returns:
+        float, float: p-value, theta
+        
+    """
+    theta = 0
+    pval = 0
+    for i in range(k):
+        y_sub, yhat_sub = resample(y, yhat, random_state=i)
+        # (np.power((y - yhat), 2) - y) / yhat for Poisson regression
+        aux = (np.power((y_sub - yhat_sub), 2) - yhat_sub) / yhat_sub
+        mod = OLS(aux, yhat_sub)
+        res = mod.fit()
+        theta += res.params[0]
+        pval += res.pvalues[0]
+    theta = theta/k
+    pval = pval/k
+    return pval, theta
+
+
+
+
+
+def negbinom_test(x, mu, theta, offset):
+    """ Test with negative binomial distribution
+    
+    Convert mu and theta to scipy parameters n and p:
+        
+    p = 1 / (theta * mu + 1)
+    n = mu * p / (1 - p)
+    
+    Args:
+        x (float): observed number of mutations (or gmean).
+        mu (float): predicted number of mutations (mean of negative binomial distribution).
+        theta (float): dispersion parameter of negative binomial distribution.
+    Returns:
+        float: p-value from NB CDF. pval = 1 - F(n<x)
+    """
+    if offset == 1:  # element with 0 bp
+        return 1
+    p = 1 / (theta * mu + 1)
+    n = mu * p / (1 - p)
+    pval = 1 - nbinom.cdf(x, n, p, loc=1)
+    return pval
+
+
+def burden_test(count, pred, offset, test_method, pval_dispersion, theta, s):
+    """ Perform burden test.
+    
+    Args:
+        count:
+        pred:
+        offset:
+        test_method:
+        model:
+        s:
+        use_gmean:
+    Returns:
+    """
+    # if pval_dispersion > 0.05:
+    #     print('binomial test is used for calculating p-value' )
+    # else:
+    #     print('negative_binomial test is used for calculating p-value')
+    if test_method == 'auto':
+        test_method = 'binomial' if pval_dispersion > 0.05 else 'negative_binomial'
+    if test_method == 'negative_binomial':
+        logger.info('Using negative binomial test with s={}, theta={}'.format(s, theta))
+        theta = s * theta
+        pvals = np.array([negbinom_test(x, mu, theta, o)
+                          for x, mu, o in zip(count, pred, offset)])
+    elif test_method == 'binomial':
+        logger.info('Using binomial test')
+        pvals = np.array([binom_test(x, n, p, 'greater')
+                          for x, n, p in zip(count, offset,
+                                             pred/offset)])
+    else:
+        logger.error('Unknown test method: {}. Please use binomial, negative_binomial or auto'.format(test_method))
+        sys.exit(1)
+    return pvals
+
+
+def bh_fdr(pvals):
+    """ BH FDR correction
+    Args:
+        pvals (np.array): array of p-values
+    Returns:
+        np.array: array of q-values
+    """
+    return multipletests(pvals, method='fdr_bh')[1]
+
+##############################################
+def perform_burdenTest(dir_path):
+    setting_config = 'sim_setting.ini'
+    param_config = 'dev.ini'
+    
+    
+    sim_setting = load_sim_settings_perBatchPerf(dir_path, setting_config,
+                                                 param_config)
+    save_name = list(sim_setting['models'].keys())[0]
+    # sim_params = sim_setting['models'][save_name]
+    # predict_func = sim_params['predict_func']
+    base_dir = sim_setting['base_dir']
+    directory_path = f'{base_dir}/{save_name}/'
+    path_obs = sim_setting['path_Y_test']
+    path_pred = f'{directory_path}/{save_name}_predTest.tsv'
+    
+    Y_obs = read_response(path_obs)
+    Y_pred = read_pred(path_pred)
+    
+    # merge the data frames based on their indexes using merge()
+    y = pd.merge(Y_obs, Y_pred, left_index=True,
+                           right_index=True, how='inner')
+    #y['predRate'].isna().sum()
+    y['nPred'] = (y.predRate*y.length*y.N)  
+    use_gmean = True
+    count = np.sqrt(y.nMut * y.nSample) if use_gmean else y.nMut
+    offset = y.length * y.N + 1
+    #test_method = 'negative_binomial'
+    s = 1
+    pval_dispersion, theta = dispersion_test(y.nPred, y.nMut, k=100)
+    y['raw_p_nBinom'] = burden_test(count, y.nPred, offset, 'negative_binomial',
+                             pval_dispersion, theta, s)
+    y['raw_q_nBinom'] = bh_fdr(y.raw_p_nBinom)
+    
+    
+    y['raw_p_binom'] = burden_test(count, y.nPred, offset, 'binomial',
+                             pval_dispersion, theta, s)
+    y['raw_q_binom'] = bh_fdr(y.raw_p_binom)
+    
+    
+    inference_dir = f'{base_dir}/{save_name}/inference/'
+    os.makedirs(inference_dir, exist_ok= True)
+    y.to_csv(f'{inference_dir + save_name}_inference.tsv',
+                      sep='\t')
+    print('****************')
+    
+    
+def perform_burdenTest2(path_pred, path_Y_regLmnts):
+    
+    Y_pred = pd.read_csv(path_pred, sep=',', header=0, index_col='binID')
+    removedElems = Y_pred.index[Y_pred.isnull().any(axis=1)].tolist()
+    
+    print("elements with no prediction:", removedElems)    
+    Y_obs = read_response(path_Y_regLmnts)
+    Y_obs = Y_obs[Y_obs['nMut'] != 0]
+    
+    y = pd.concat([Y_obs, Y_pred], axis=1)
+    # Drop rows with NaN values (elements that are not selected in bootstrap sampling)
+    y = y.dropna()
+    
+    y['nPred'] = (y.pred_rates*y.length*y.N)  
+    use_gmean = True
+    count = np.sqrt(y.nMut * y.nSample) if use_gmean else y.nMut
+    offset = y.length * y.N + 1
+    #test_method = 'negative_binomial'
+    s = 1
+    pval_dispersion, theta = dispersion_test(y.nPred, y.nMut, k=100)
+    y['raw_p_nBinom'] = burden_test(count, y.nPred, offset, 'negative_binomial',
+                             pval_dispersion, theta, s)
+    y['raw_q_nBinom'] = bh_fdr(y.raw_p_nBinom)
+    
+    
+    y['raw_p_binom'] = burden_test(count, y.nPred, offset, 'binomial',
+                             pval_dispersion, theta, s)
+    y['raw_q_binom'] = bh_fdr(y.raw_p_binom)
+    
+    
+    # import os
+    path_save = '/'.join(path_pred.split('/')[0:-1])
+    y.to_csv(f'{path_save}/inference.tsv',
+                      sep='\t')
+    print('****************')    
+
+
+
+dir_path =  '../external/output/GBM/'
+perform_burdenTest(dir_path)
+
+
+# dir_paths =  ['../external/output/small_BatchSize/500_50fiveLayers_do3_bs64/',
+#               # '../external/output/GBM/',
+#               # '../external/output/GLM/',
+#               # '../external/output/RF/'
+#               ]
+
+# for dir_path in dir_paths:
+#     perform_burdenTest(dir_path)
+
+path_Y_regLmnts = '../external/rawInput/Pan_Cancer_test_y.tsv'
+path_pred = '../external/output/GBM_transferLearning/GBM/GBM_ensemble_bootstraps25_preds.tsv'
+perform_burdenTest2(path_pred, path_Y_regLmnts)
