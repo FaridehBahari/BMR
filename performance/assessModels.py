@@ -134,8 +134,7 @@ def assess_models(sim_setting):
     
     Y_obs_all_intergenic = read_obs(path_Y_train)
     Y_obs_all_elems = read_obs(path_Y_test)
-    Y_obs_val = read_obs(path_Y_val)
-    bins_val = Y_obs_val.index
+    
     acc_all = []
     corr_all = []
     mse_all = []
@@ -147,6 +146,8 @@ def assess_models(sim_setting):
         print(save_name)
         
         if split_intergenic:
+            Y_obs_val = read_obs(path_Y_val)
+            bins_val = Y_obs_val.index
             Y_obs_unseen = pd.concat([Y_obs_all_elems, Y_obs_val], axis= 0)
             Y_obs_seen = Y_obs_all_intergenic.drop(bins_val)
         else:
