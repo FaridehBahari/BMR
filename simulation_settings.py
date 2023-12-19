@@ -8,10 +8,8 @@ Created on Tue Jul  4 16:13:00 2023
 import sys
 from models.GLM_functions import GLM_model_info
 from models.NN_functions import nn_model_info
-from models.DP_functions import DP_model_info
 from models.GBM_functions import gbm_model_info
 from models.RF_functions import RF_model_info
-from models.siamese_new import  pair_rank_info_siamese2
 
 import configparser
 

@@ -16,7 +16,6 @@ import numpy as np
 from sklearn.metrics import mean_squared_error
 from simulation_settings import load_sim_settings_perBatchPerf
 from models.runBMR_functions import load_data
-from readFtrs_Rspns import set_gpu_memory_limit
 import h5py
 
 from tensorflow.keras.models import load_model
@@ -68,8 +67,8 @@ def calc_Pairs_acc(Nr_pair_acc, obs, pred):
 def assess_model_element_type(Y_pred, Y_obs, Nr_pair_acc, model_name, elem):
     
     if elem == "intergenic":
-        obs_elem = split_by_element(Y_obs,  r'[b]\d')
-        pred_elems = split_by_element(Y_pred,  r'[b]\d')
+        obs_elem = split_by_element(Y_obs,  r'[v]\d')
+        pred_elems = split_by_element(Y_pred,  r'[v]\d')
     else:
         obs_elem = split_by_element(Y_obs, elem)
         pred_elems = split_by_element(Y_pred, elem)
@@ -97,7 +96,7 @@ def assess_model(Y_pred, Y_obs, Nr_pair_acc, model_name, per_element=True):
         elems = ["gc19_pc.cds", "enhancers", "gc19_pc.3utr", "gc19_pc.5utr",
                  "gc19_pc.promCore", "gc19_pc.ss", "lncrna.ncrna", 
                  "lncrna.promCore"]
-        if sum(Y_pred.index.str.contains(r'[b]\d')) != 0:
+        if sum(Y_pred.index.str.contains(r'[v]\d')) != 0:
             elems.append("intergenic")
         
         results = []
@@ -296,7 +295,6 @@ def assess_perBatch(dir_path):
 ###################################################################3
 def load_all_obsRates():
     path_Y_test = '../external/rawInput/Pan_Cancer_test_y.tsv'
-    
     path_Y_train = '../external/rawInput/Pan_Cancer_train_y.tsv'
     
     Y_test = read_response(path_Y_test) 

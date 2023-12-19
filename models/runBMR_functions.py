@@ -11,7 +11,6 @@ import pandas as pd
 import numpy as np
 from models.GLM_functions import GLM_model_info
 from models.NN_functions import nn_model_info
-from models.DP_functions import DP_model_info
 from models.GBM_functions import gbm_model_info
 from sklearn.model_selection import train_test_split
 from readFtrs_Rspns import scale_train
@@ -62,6 +61,7 @@ def load_data(sim_setting):
         Y_test = pd.concat([Y_test, Y_val], axis=0)
     
     if DSmpl:
+        np.random.seed(0)
         tr_indices = np.random.choice(list(Y_train.index), size=n_sample, replace=False)
         Y_train = Y_train.loc[tr_indices]
         print(f'Down sampling was performed... number of training bins: {Y_train.shape[0]}')
