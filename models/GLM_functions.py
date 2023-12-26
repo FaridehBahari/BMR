@@ -5,6 +5,7 @@ import statsmodels.api as sm
 import pickle
 from scipy.special import logit
 from sklearn.linear_model import LassoCV, RandomizedLasso
+# from rampy import RandomLasso
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
@@ -71,6 +72,29 @@ def run_lasso(X, y, max_iter=3000, cv=5, n_threads=1):
     lassocv = reg.fit(Xsub, ysub)
     return lassocv.alpha_
 
+# def run_rndlasso(X, y, alpha, n_resampling=500, sample_fraction=0.1, n_threads=1):
+#     """  Implement Randomized Lasso using rampy package
+
+#     Args:
+#         X (np.array): scaled X. 
+#         y (pd.df): four columns response table. 
+#         alpha (float): parameter trained from LassoCV 
+#         n_resampling (int): number of times for resampling 
+#         sample_fraction (float): fraction of data to use at each resampling
+
+#     Returns:
+#         np.array: feature importance scores
+
+#     """
+
+#     # generate logit response
+#     y_logit = logit((y.nMut + 0.5) / (y.length * y.N))
+#     reg = RandomLasso(alpha=alpha, n_resampling=n_resampling, sample_fraction=sample_fraction, n_jobs=n_threads)
+#     rndlasso = reg.fit(X, y_logit)
+#     fi_scores = rndlasso.scores_
+#     return fi_scores
+
+
 def run_rndlasso(X, y, alpha,
     n_resampling=500, sample_fraction=0.1, n_threads=1):
     """  Implement Randomized Lasso in sklearn
@@ -99,6 +123,7 @@ def run_rndlasso(X, y, alpha,
     rndlasso = reg.fit(X, y_logit)
     fi_scores = rndlasso.scores_
     return fi_scores
+
 
 def save_fi(fi_scores, feature_names, project_name, out_dir):
     """ Save feature importance results to disk
