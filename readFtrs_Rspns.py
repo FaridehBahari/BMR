@@ -255,3 +255,27 @@ def set_gpu_memory_limit(gpu_fraction):
         config.gpu_options.per_process_gpu_memory_fraction = gpu_fraction
         sess = tf.compat.v1.Session(config=config)
         tf.compat.v1.keras.backend.set_session(sess)
+        
+
+def read_fi(path, cutoff=0.8):
+    """Read feature importance table in TSV format.
+
+    Feature importance table must contain two columns: name and importance
+
+    Args:
+        path (str): path to the file.
+        cutoff (float): cutoff of feature selection.
+
+    Returns:
+        list: useful features. Return None if path is None.
+
+    """
+    fi = pd.read_csv(path, sep='\t', header=0, index_col='name',
+                     usecols=['name', 'importance'])
+    assert len(fi.index.values) == len(fi.index.unique()), \
+        "Feature name in feature importance table is not unique."
+    keep = (fi.importance >= cutoff).values
+    use_features = fi.loc[keep]
+    use_features = use_features.index.values
+    
+    return use_features

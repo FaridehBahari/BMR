@@ -13,28 +13,76 @@ from models.GLM_functions import GLM_model_info
 from models.NN_functions import nn_model_info
 from models.GBM_functions import gbm_model_info
 from sklearn.model_selection import train_test_split
-from readFtrs_Rspns import scale_train
+from readFtrs_Rspns import scale_train, scale_test, load_data, read_feature
 
 ###########
 
+def generate_train_valvar_sets(path_var_intervals_Y, path_Y_train, 
+                               path_train_info, val_size):
+    
+    # read all variable-size bins
+    var_interval_response = read_response(path_var_intervals_Y)
+    var_interval_response = var_interval_response.iloc[np.where(var_interval_response.length >= 20)]
+    
+    # sample from variable-size bins to have validation set
+    val_indices = np.random.choice(var_interval_response.index, 
+                                    size=val_size, replace=False)
+    Y_val = var_interval_response.loc[val_indices]
+    
+    # read all fixed-size bins
+    Y_train = read_response(path_Y_train)
+    train_info = pd.read_csv(path_train_info, sep = '\t', index_col='binID')
+    train_Y_annotated = pd.concat([Y_train, train_info], axis=1)
 
-def load_data(sim_setting):
+    # remove validation bins from train set
+    filtered_train_Y = train_Y_annotated[~train_Y_annotated['orig_name'].str.contains('|'.join(Y_val.index))]
+    
+    return filtered_train_Y, Y_val
+
+
+
+def load_data_sim(sim_setting):
     path_X_test = sim_setting['path_X_test']
     path_X_train = sim_setting['path_X_train']
+    path_X_val = sim_setting['path_X_validate']
+    path_train_info = sim_setting['path_train_info']
     path_Y_test = sim_setting['path_Y_test']
     path_Y_train = sim_setting['path_Y_train']
     path_Y_val = sim_setting['path_Y_validate']
+    val_size = 800
     scale = ast.literal_eval(sim_setting['scale'])
+    split_intergenic = ast.literal_eval(sim_setting['split_intergenic'])
     DSmpl = ast.literal_eval(sim_setting['DSmpl'])
     n_sample = sim_setting['n_sample']
     remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
-    split_intergenic = ast.literal_eval(sim_setting['split_intergenic'])
     
-    X_train, Y_train, X_test, Y_test = create_TestTrain_TwoSources(path_X_train, 
-                                                               path_Y_train, 
-                                                               path_X_test, 
-                                                               path_Y_test,
-                                                               scale)
+    
+    X_test, Y_test = load_data(path_X_test, path_Y_test)
+    
+    Y_train, Y_val = generate_train_valvar_sets(path_Y_val, path_Y_train, 
+                                   path_train_info, val_size)
+    
+    X_train = read_feature(path_X_train, Y_train.index)
+    X_val = read_feature(path_X_val, Y_val.index)
+    
+    # use_features = np.nan
+    use_features = np.load('dp_ftrs.npy', allow_pickle=True)
+    if use_features is not None:
+        X_train = X_train[use_features]
+        X_test = X_test[use_features]
+        X_val = X_val[use_features]
+    
+    # reorder test columns based on train columns
+    X_test = X_test[X_train.columns]
+    X_val = X_val[X_train.columns]
+    
+    
+    
+    
+    if scale:
+        X_train, meanSc, sdSc = scale_train(X_train)
+        X_test = scale_test(X_test, meanSc, sdSc)
+        X_val = scale_test(X_val, meanSc, sdSc)
     
     
     
@@ -67,33 +115,13 @@ def load_data(sim_setting):
         print(f'Down sampling was performed... number of training bins: {Y_train.shape[0]}')
         X_train = X_train.loc[Y_train.index]
     
+    X_test = pd.concat([X_test, X_val], axis=0)
+    Y_test = pd.concat([Y_test, Y_val], axis=0)
+    
     if (Y_test.index != X_test.index).all():
         raise ValueError('X_test and Y_test indexes are not the same')
     if (Y_train.index != X_train.index).all():
         raise ValueError('X_train and Y_train indexes are not the same')
-    return X_train, Y_train, X_test, Y_test
-
-
-def load_data_new(sim_setting, n_sample, model_number):
-    
-    base_dir = sim_setting['base_dir']
-    model_name = list((sim_setting['models']).keys())[0]
-    
-    all_X_train, all_Y_train, X_test, Y_test = load_data(sim_setting)
-    
-    saved_train_indices = f'{base_dir}/{model_name}_{model_number}/{model_name}_{model_number}_trainBins.npy'
-    if os.path.isfile(saved_train_indices):
-        idx_indices = np.load(saved_train_indices, allow_pickle=True)
-
-        print(f'load {model_name}_{model_number} train data based on saved train IDs')
-    else:
-        indices = all_Y_train.index.unique()
-        idx_indices = np.random.choice(list(indices), size=n_sample, replace=False)
-        print(f'load {model_name}_{model_number} train data by random sampling')
-        
-    Y_train = all_Y_train.loc[idx_indices]
-    X_train = all_X_train.loc[idx_indices]
-   
     return X_train, Y_train, X_test, Y_test
 
 

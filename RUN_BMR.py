@@ -3,7 +3,7 @@ import os
 import platform
 import argparse
 from readFtrs_Rspns import set_gpu_memory_limit
-from models.runBMR_functions import  RUN_BMR, load_data, config_save
+from models.runBMR_functions import  RUN_BMR, load_data_sim, config_save
 from performance.assessModels import assess_models
 from simulation_settings import load_sim_settings
 
@@ -26,7 +26,7 @@ else:
 st_time = time.time()
 sim_setting = load_sim_settings(sim_file)
 config_save(sim_file)
-X_train, Y_train, X_test, Y_test = load_data(sim_setting)
+X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting)
 
 RUN_BMR(sim_setting, X_train, Y_train, X_test, Y_test, make_pred=True)
 print('************')
