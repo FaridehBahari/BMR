@@ -39,7 +39,93 @@ def generate_train_valvar_sets(path_var_intervals_Y, path_Y_train,
     
     return filtered_train_Y, Y_val
 
+def load_data(sim_setting):
+    
+    new_ftrs = ['APOBEC3A', 'E001-DNAMethylSBS', 'E002-DNAMethylSBS', 'E003-DNAMethylSBS', 
+     'E004-DNAMethylSBS', 'E005-DNAMethylSBS', 'E006-DNAMethylSBS', 
+     'E007-DNAMethylSBS', 'E008-DNAMethylSBS', 'E009-DNAMethylSBS', 
+     'E010-DNAMethylSBS', 'E011-DNAMethylSBS', 'E012-DNAMethylSBS', 
+     'E013-DNAMethylSBS', 'E014-DNAMethylSBS', 'E015-DNAMethylSBS',
+     'E016-DNAMethylSBS', 'E017-DNAMethylSBS', 'E018-DNAMethylSBS', 
+     'E019-DNAMethylSBS', 'E020-DNAMethylSBS', 'E021-DNAMethylSBS',
+     'E022-DNAMethylSBS', 'E023-DNAMethylSBS', 'E024-DNAMethylSBS', 
+     'E025-DNAMethylSBS', 'E026-DNAMethylSBS', 'E027-DNAMethylSBS',
+     'E028-DNAMethylSBS', 'E029-DNAMethylSBS', 'E030-DNAMethylSBS', 
+     'E031-DNAMethylSBS', 'E032-DNAMethylSBS', 'E033-DNAMethylSBS',
+     'E034-DNAMethylSBS', 'E035-DNAMethylSBS', 'E036-DNAMethylSBS', 
+     'E037-DNAMethylSBS', 'E038-DNAMethylSBS', 'E039-DNAMethylSBS', 
+     'E040-DNAMethylSBS', 'E041-DNAMethylSBS', 'E042-DNAMethylSBS', 
+     'E043-DNAMethylSBS', 'E044-DNAMethylSBS', 'E045-DNAMethylSBS', 
+     'E046-DNAMethylSBS', 'E047-DNAMethylSBS', 'E048-DNAMethylSBS', 
+     'E049-DNAMethylSBS', 'E050-DNAMethylSBS', 'E051-DNAMethylSBS', 
+     'E052-DNAMethylSBS', 'E053-DNAMethylSBS', 'E054-DNAMethylSBS',
+     'E055-DNAMethylSBS', 'E056-DNAMethylSBS', 'E057-DNAMethylSBS',
+     'E058-DNAMethylSBS', 'E059-DNAMethylSBS', 'E061-DNAMethylSBS',
+     'E062-DNAMethylSBS', 'E063-DNAMethylSBS', 'E065-DNAMethylSBS',
+     'E066-DNAMethylSBS', 'E067-DNAMethylSBS', 'E068-DNAMethylSBS',
+     'E069-DNAMethylSBS', 'E070-DNAMethylSBS', 'E071-DNAMethylSBS', 
+     'E072-DNAMethylSBS', 'E073-DNAMethylSBS', 'E074-DNAMethylSBS', 
+     'E075-DNAMethylSBS', 'E076-DNAMethylSBS', 'E077-DNAMethylSBS', 
+     'E078-DNAMethylSBS', 'E079-DNAMethylSBS', 'E080-DNAMethylSBS', 
+     'E081-DNAMethylSBS', 'E082-DNAMethylSBS', 'E083-DNAMethylSBS', 
+     'E084-DNAMethylSBS', 'E085-DNAMethylSBS', 'E086-DNAMethylSBS', 
+     'E087-DNAMethylSBS', 'E088-DNAMethylSBS', 'E089-DNAMethylSBS', 
+     'E090-DNAMethylSBS', 'E091-DNAMethylSBS', 'E092-DNAMethylSBS', 
+     'E093-DNAMethylSBS', 'E094-DNAMethylSBS', 'E095-DNAMethylSBS', 
+     'E096-DNAMethylSBS', 'E097-DNAMethylSBS', 'E098-DNAMethylSBS', 
+     'E099-DNAMethylSBS', 'E100-DNAMethylSBS', 'E101-DNAMethylSBS', 
+     'E102-DNAMethylSBS', 'E103-DNAMethylSBS', 'E104-DNAMethylSBS', 
+     'E105-DNAMethylSBS', 'E106-DNAMethylSBS', 'E107-DNAMethylSBS', 
+     'E108-DNAMethylSBS', 'E109-DNAMethylSBS', 'E110-DNAMethylSBS', 
+     'E111-DNAMethylSBS', 'E112-DNAMethylSBS', 'E113-DNAMethylSBS', 
+     'E114-DNAMethylSBS', 'E115-DNAMethylSBS', 'E116-DNAMethylSBS', 
+     'E117-DNAMethylSBS', 'E118-DNAMethylSBS', 'E119-DNAMethylSBS', 
+     'E120-DNAMethylSBS', 'E121-DNAMethylSBS', 'E122-DNAMethylSBS', 
+     'E123-DNAMethylSBS', 'E124-DNAMethylSBS', 'E125-DNAMethylSBS', 
+     'E126-DNAMethylSBS', 'E127-DNAMethylSBS', 'E128-DNAMethylSBS', 
+     'E129-DNAMethylSBS', 'primates_phastCons46way', 
+     'primates_phyloP46way', 'vertebrate_phastCons46way']
 
+    
+    
+    path_X_test = sim_setting['path_X_test']
+    path_X_train = sim_setting['path_X_train']
+    path_Y_test = sim_setting['path_Y_test']
+    path_Y_train = sim_setting['path_Y_train']
+    scale = ast.literal_eval(sim_setting['scale'])
+    DSmpl = ast.literal_eval(sim_setting['DSmpl'])
+    n_sample = sim_setting['n_sample']
+    remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
+    
+    
+    X_train, Y_train, X_test, Y_test = create_TestTrain_TwoSources(path_X_train, 
+                                                               path_Y_train, 
+                                                               path_X_test, 
+                                                               path_Y_test,
+                                                               scale)
+    
+    
+    X_train = X_train.drop(columns=new_ftrs)
+    X_test = X_test.drop(columns=new_ftrs)
+    
+    if remove_unMutated:
+        Y_train = Y_train[Y_train['nMut'] != 0]
+        X_train = X_train.loc[Y_train.index]
+        
+        Y_test = Y_test[Y_test['nMut'] != 0]
+        X_test = X_test.loc[Y_test.index]
+    
+    if DSmpl:
+        tr_indices = np.random.choice(list(Y_train.index), size=n_sample, replace=False)
+        Y_train = Y_train.loc[tr_indices]
+        print(f'Down sampling was performed... number of training bins: {Y_train.shape[0]}')
+        X_train = X_train.loc[Y_train.index]
+    
+    if (Y_test.index != X_test.index).all():
+        raise ValueError('X_test and Y_test indexes are not the same')
+    if (Y_train.index != X_train.index).all():
+        raise ValueError('X_train and Y_train indexes are not the same')
+    return X_train, Y_train, X_test, Y_test
 
 def load_data_sim(sim_setting):
     path_X_test = sim_setting['path_X_test']
@@ -63,10 +149,10 @@ def load_data_sim(sim_setting):
                                    path_train_info, val_size)
     
     X_train = read_feature(path_X_train, Y_train.index)
-    X_val = read_feature(path_X_val, Y_val.index)
+    X_val = read_feature(path_X_val, Y_val.index) # lazy loading
     
-    # use_features = np.nan
-    use_features = np.load('dp_ftrs.npy', allow_pickle=True)
+    use_features = np.nan
+    # use_features = np.load('dp_ftrs.npy', allow_pickle=True)
     if use_features is not None:
         X_train = X_train[use_features]
         X_test = X_test[use_features]
