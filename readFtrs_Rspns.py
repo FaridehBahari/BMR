@@ -170,20 +170,33 @@ def create_TestTrain_TwoSources(path_X_train, path_Y_train, path_X_test,
 
 
 
-def save_preds_tsv(fitted_Model, path_save, save_name):
+def save_preds_tsv(fitted_Model, path_save, save_name, iteration = None):
     
-    os.makedirs(f'{path_save}/{save_name}/', exist_ok= True)
+    
+    os.makedirs(f'{path_save}/{save_name}/rep_train_test/',
+                exist_ok= True)
+    
     # calculate predictions:
     predRates_train = fitted_Model.predRates_train
     
-    # save the predicted values DataFrame to a file 
-    predRates_train.to_csv(f'{path_save}/{save_name}/{save_name}_predTrain.tsv',
+    # save the predicted values DataFrame to a file
+    path_file_tr = f'{path_save}/{save_name}/{save_name}_predTrain.tsv'
+    path_file_test = f'{path_save}/{save_name}/{save_name}_predTest.tsv'
+    
+    if iteration is not None:
+       path_file_test = f'{path_save}/{save_name}/rep_train_test/{save_name}_predTest{iteration}.tsv'
+        
+    if iteration is None: 
+        predRates_train.to_csv(path_file_tr,
                            sep = '\t')
     
-    predRates_test = fitted_Model.predRates_test
     
-    predRates_test.to_csv(f'{path_save}/{save_name}/{save_name}_predTest.tsv',
+    predRates_test = fitted_Model.predRates_test
+    predRates_test.to_csv(path_file_test,
                           sep = '\t')
+
+
+
 
 ############
 import subprocess

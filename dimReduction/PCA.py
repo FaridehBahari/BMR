@@ -4,6 +4,7 @@ Created on Tue Jul 18 16:38:05 2023
 
 @author: Farideh
 """
+import os
 import pandas as pd 
 from sklearn.decomposition import PCA 
 # import seaborn as sns # to plot the heatmap
@@ -25,7 +26,7 @@ from readFtrs_Rspns import paste0
 #                           columns = paste0('F', range(data_pca.shape[1])))
 
 
-def train_PCA(variance_threshold, X_train):
+def train_PCA(X_train, variance_threshold):
     pca_model = PCA(n_components=None)  # Use None to get all components initially
     pca_model.fit(X_train)
 
@@ -47,3 +48,16 @@ def dim_reduction_PCA(pca_model, subject_X):
                             columns=paste0('F', range(data_pca.shape[1])))
     
     return data_pca
+
+
+
+def save_PCA_reduced(X_train, X_test, save_name, variance_threshold = 0.8):
+    os.makedirs(f'../external/BMR/procInput/dim_reduced/', exist_ok= True)
+    pca_model = train_PCA(X_train, variance_threshold)
+    pca_reduced_train = dim_reduction_PCA(pca_model, X_train)
+    pca_reduced_test = dim_reduction_PCA(pca_model, X_test)
+
+    pca_reduced_train.to_csv(f'../external/BMR/procInput/dim_reduced/{save_name}train_PCAreduced.tsv',
+                             sep = '\t')
+    pca_reduced_test.to_csv(f'../external/BMR/procInput/dim_reduced/{save_name}test_PCAreduced.tsv', 
+                            sep = '\t')

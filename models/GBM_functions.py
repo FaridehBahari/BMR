@@ -108,9 +108,9 @@ def predict_gbm(model, X_test, length_elems):
                                  index=X_test.index)
     return prediction_df
 
-def save_gbm(fitted_Model, path_save, save_name, save_model = True): 
+def save_gbm(fitted_Model, path_save, save_name, iteration = None, save_model = True): 
     
-    save_preds_tsv(fitted_Model, path_save, save_name)
+    save_preds_tsv(fitted_Model, path_save, save_name, iteration)
     
     if save_model:
         M = fitted_Model.model['model']

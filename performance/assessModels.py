@@ -158,7 +158,7 @@ def assess_models(sim_setting):
         Y_pred_unseen = read_pred(path_pred_unseen)
         Y_pred_unseen = Y_pred_unseen.loc[Y_obs_unseen.index]
         if (Y_pred_unseen.index != Y_obs_unseen.index).all():
-            ValueError('index mismatch')
+            raise ValueError('index mismatch')
         assessments_test = assess_model(Y_pred_unseen, Y_obs_unseen, 
                                         Nr_pair_acc, save_name, per_element=True)
         

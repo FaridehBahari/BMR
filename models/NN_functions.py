@@ -395,9 +395,9 @@ def nn_model_info(save_name, *args):
     return model_dict
 
 
-def save_nn(fitted_Model, path_save, save_name, save_model = True): 
+def save_nn(fitted_Model, path_save, save_name, iteration = None, save_model = True): 
     
-    save_preds_tsv(fitted_Model, path_save, save_name)
+    save_preds_tsv(fitted_Model, path_save, save_name, iteration)
     
     if save_model:
         M = fitted_Model.model['model']
