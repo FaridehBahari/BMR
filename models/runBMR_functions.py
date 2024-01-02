@@ -211,9 +211,11 @@ def load_data_sim(sim_setting):
                                                                path_Y_test,
                                                                scale)
     
+    columns_to_exclude = [col for col in new_ftrs if col in X_train.columns]
+    X_train = X_train.drop(columns=columns_to_exclude, errors='ignore') #
+
+    X_test = X_test.drop(columns=columns_to_exclude, errors='ignore')
     
-    X_train = X_train.drop(columns=new_ftrs)
-    X_test = X_test.drop(columns=new_ftrs)
     
     if remove_unMutated:
         Y_train = Y_train[Y_train['nMut'] != 0]
@@ -232,6 +234,7 @@ def load_data_sim(sim_setting):
         raise ValueError('X_test and Y_test indexes are not the same')
     if (Y_train.index != X_train.index).all():
         raise ValueError('X_train and Y_train indexes are not the same')
+        
     return X_train, Y_train, X_test, Y_test
 
 

@@ -127,10 +127,10 @@ def assess_models(sim_setting):
     models = sim_setting['models']
     path_Y_train = sim_setting['path_Y_train']
     path_Y_test = sim_setting['path_Y_test']
-    path_Y_val = sim_setting['path_Y_validate']
+    
     base_dir = sim_setting['base_dir']
     Nr_pair_acc = sim_setting['Nr_pair_acc']
-    split_intergenic = ast.literal_eval(sim_setting['split_intergenic'])
+    
     
     Y_obs_all_intergenic = read_obs(path_Y_train)
     Y_obs_all_elems = read_obs(path_Y_test)
@@ -145,18 +145,13 @@ def assess_models(sim_setting):
         save_name = m['save_name']
         print(save_name)
         
-        if split_intergenic:
-            Y_obs_val = read_obs(path_Y_val)
-            bins_val = Y_obs_val.index
-            Y_obs_unseen = pd.concat([Y_obs_all_elems, Y_obs_val], axis= 0)
-            Y_obs_seen = Y_obs_all_intergenic.drop(bins_val)
-        else:
-            Y_obs_unseen = Y_obs_all_elems
-            Y_obs_seen = Y_obs_all_intergenic
+        Y_obs_unseen = Y_obs_all_elems.copy()
+        Y_obs_seen = Y_obs_all_intergenic.copy()
             
         path_pred_unseen = f'{base_dir}/{save_name}/{save_name}_predTest.tsv'
         Y_pred_unseen = read_pred(path_pred_unseen)
         Y_pred_unseen = Y_pred_unseen.loc[Y_obs_unseen.index]
+
         if (Y_pred_unseen.index != Y_obs_unseen.index).all():
             raise ValueError('index mismatch')
         assessments_test = assess_model(Y_pred_unseen, Y_obs_unseen, 
@@ -167,6 +162,8 @@ def assess_models(sim_setting):
         path_pred_seen = f'{base_dir}/{save_name}/{save_name}_predTrain.tsv'
         Y_pred_seen = read_pred(path_pred_seen)
         Y_pred_seen = Y_pred_seen.loc[Y_obs_seen.index]
+        
+        
         if (Y_pred_seen.index != Y_obs_seen.index).all():
             ValueError('index mismatch')
          

@@ -22,9 +22,6 @@ def build_GLM_params(config_file):
 
 def run_glm(X_train, Y_train, param):
     
-    use_features = read_fi('../external/rawInput/DP_results/Binom_GLM.feature_importance.tsv',
-                           cutoff=0.5)
-    X_train = X_train[use_features]
     # Add const manually. sm.add_constant cannot add 1 for shape (1, n)
     X_train = np.c_[X_train, np.ones(X_train.shape[0])]
     # make two columns response (# success, # failure)
@@ -34,16 +31,16 @@ def run_glm(X_train, Y_train, param):
     glm = sm.GLM(y_binom, X_train, family=sm.families.Binomial())
     model = glm.fit()
     
-    model_data = {"model": model,
-                  "use_features": use_features
+    model_data = {"model": model
+                  
                   }
     
     return model_data
 
 def predict_glm(model, X_test, length_elems):
-    use_features = model['use_features']
+    
     binID = X_test.index
-    X_test = X_test[use_features]
+    
     X_test = np.c_[X_test, np.ones(X_test.shape[0])]
     M = model['model']
     pred_test = M.predict(X_test) 

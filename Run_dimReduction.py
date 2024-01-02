@@ -1,26 +1,40 @@
+import time
 import os
-import pandas as pd
-from readFtrs_Rspns import create_TestTrain_TwoSources, set_gpu_memory_limit
-from dimReduction.autoencoder import train_autoencoder_model, dim_reduction_AE
-from dimReduction.PCA import train_PCA, dim_reduction_PCA
-import matplotlib.pyplot as plt
-import pickle
+import platform
+import argparse
+from readFtrs_Rspns import set_gpu_memory_limit
+from models.runBMR_functions import  load_data_sim, config_save
+from simulation_settings import load_sim_settings
+from dimReduction.PCA import save_PCA_reduced
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 gpu_fraction = 0.2
 set_gpu_memory_limit(gpu_fraction)
 
 
-os.makedirs('../external/procInput/', exist_ok= True)
-########### load data ################   
-path_X_test = '../external/rawInput/test_feature.hdf5'
-path_X_train = '../external/rawInput/train_feature.hdf5'
-path_Y_train = '../external/rawInput/Pan_Cancer_train_y.tsv'
-path_Y_test = '../external/rawInput/Pan_Cancer_test_y.tsv'
+if platform.system() == 'Windows':
+    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+    sim_file = 'configs/quick/dimReduction.ini'
+    # sim_file = 'configs/rate_based/dimReduction.ini'
+else:
+    parser = argparse.ArgumentParser(description='Train different models for rate prediction on intergenic bins')
+    parser.add_argument('sim_file', type=str, help='the path to the simulation setting config')
+    args = parser.parse_args()
+    sim_file = args.sim_file
 
-X_train, Y_train, X_test, Y_test = create_TestTrain_TwoSources(path_X_train, 
-                                                           path_Y_train, 
-                                                           path_X_test, 
-                                                           path_Y_test)
+config_save(sim_file)
+########### load data ################      
+st_time = time.time()
+sim_setting = load_sim_settings(sim_file)
+
+X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting)
+# X_train = X_train.fillna(0)
+
+
+############### PCA for dim reduction ##############
+save_name = list(sim_setting['models'].keys())[0]
+save_PCA_reduced(X_train, X_test, sim_setting['base_dir'], save_name, 0.8)
 
 ############### autoencoder for dim reduction ##############
 # n_dim = 130
@@ -95,11 +109,3 @@ X_train, Y_train, X_test, Y_test = create_TestTrain_TwoSources(path_X_train,
 
 # new_reduced_test.to_csv(f'{path_save}test_AEreduced_75F.tsv', sep = '\t')
 # new_reduced_train.to_csv(f'{path_save}train_AEreduced_75F.tsv', sep = '\t')
-############### PCA for dim reduction ##############
-variance_threshold = 0.8  # .9...370pc-------------------.85...221pc----------------.8...130pc
-pca_model = train_PCA(X_train, variance_threshold)
-pca_reduced_train = dim_reduction_PCA(pca_model, X_train)
-pca_reduced_test = dim_reduction_PCA(pca_model, X_test)
-
-pca_reduced_train.to_csv('../external/procInput/train_PCAreduced.tsv', sep = '\t')
-pca_reduced_test.to_csv('../external/procInput/test_PCAreduced.tsv', sep = '\t')
