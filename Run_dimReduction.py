@@ -29,7 +29,7 @@ st_time = time.time()
 sim_setting = load_sim_settings(sim_file)
 
 X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting)
-# X_train = X_train.fillna(0)
+X_train = X_train.fillna(0)
 
 
 ############### PCA for dim reduction ##############

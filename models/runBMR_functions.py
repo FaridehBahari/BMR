@@ -429,7 +429,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
         if not os.path.exists(readme_file_name) or overwrite:
             write_readme_file(m, readme_file_name)
             
-            for i in range(10):
+            for i in range(15):
                 print(f'...... repeat number {i+1} of train-test for evaluation of the {name}')
                 Y_train, Y_test = sample_train_valvar(Y_val_cmplt, Y_tr_cmplt, 
                                                train_info, val_size)
