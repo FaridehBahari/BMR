@@ -122,27 +122,28 @@ def load_data_sim_2(sim_setting):
 
 
 
-def generate_train_valvar_sets(path_var_intervals_Y, path_Y_train, 
-                               path_train_info, val_size):
+# def generate_train_valvar_sets(path_var_intervals_Y, path_Y_train, 
+#                                path_train_info, val_size, seed_value):
     
-    # read all variable-size bins
-    var_interval_response = read_response(path_var_intervals_Y)
-    var_interval_response = var_interval_response.iloc[np.where(var_interval_response.length >= 20)]
+#     # read all variable-size bins
+#     var_interval_response = read_response(path_var_intervals_Y)
+#     var_interval_response = var_interval_response.iloc[np.where(var_interval_response.length >= 20)]
     
-    # sample from variable-size bins to have validation set
-    val_indices = np.random.choice(var_interval_response.index, 
-                                    size=val_size, replace=False)
-    Y_val = var_interval_response.loc[val_indices]
+#     # sample from variable-size bins to have validation set
+#     np.random.seed(seed_value)
+#     val_indices = np.random.choice(var_interval_response.index, 
+#                                     size=val_size, replace=False)
+#     Y_val = var_interval_response.loc[val_indices]
     
-    # read all fixed-size bins
-    Y_train = read_response(path_Y_train)
-    train_info = pd.read_csv(path_train_info, sep = '\t', index_col='binID')
-    train_Y_annotated = pd.concat([Y_train, train_info], axis=1)
+#     # read all fixed-size bins
+#     Y_train = read_response(path_Y_train)
+#     train_info = pd.read_csv(path_train_info, sep = '\t', index_col='binID')
+#     train_Y_annotated = pd.concat([Y_train, train_info], axis=1)
 
-    # remove validation bins from train set
-    filtered_train_Y = train_Y_annotated[~train_Y_annotated['orig_name'].str.contains('|'.join(Y_val.index))]
+#     # remove validation bins from train set
+#     filtered_train_Y = train_Y_annotated[~train_Y_annotated['orig_name'].str.contains('|'.join(Y_val.index))]
     
-    return filtered_train_Y, Y_val
+#     return filtered_train_Y, Y_val
 
 def load_data_sim(sim_setting):
     
@@ -225,6 +226,8 @@ def load_data_sim(sim_setting):
         X_test = X_test.loc[Y_test.index]
     
     if DSmpl:
+        
+        np.random.seed(40)
         tr_indices = np.random.choice(list(Y_train.index), size=n_sample, replace=False)
         Y_train = Y_train.loc[tr_indices]
         print(f'Down sampling was performed... number of training bins: {Y_train.shape[0]}')
@@ -381,13 +384,14 @@ def save_train_ids(sim_file, Y_train, model_number):
 
 
 def sample_train_valvar(var_interval_response, Y_train, 
-                               train_info, val_size):
+                               train_info, val_size, seed_value):
     
     # restrict to > 20nt length variable-size bins
     
     var_interval_response = var_interval_response.iloc[np.where(var_interval_response.length >= 20)]
     
     # sample from variable-size bins to have validation set
+    np.random.seed(seed_value)
     val_indices = np.random.choice(var_interval_response.index, 
                                     size=val_size, replace=False)
     Y_val = var_interval_response.loc[val_indices]
@@ -412,6 +416,9 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
 
     train_info = train_info.loc[Y_tr_cmplt.index]
     
+    seed_values = [1, 5, 14, 10, 20, 30, 40, 50, 60, 70, 80, 90, 77, 100, 110]
+    
+    
     for key in models:
        
         m = models[key]
@@ -431,8 +438,9 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
             
             for i in range(15):
                 print(f'...... repeat number {i+1} of train-test for evaluation of the {name}')
+                seed_value = np.random.seed(seed_values[i])
                 Y_train, Y_test = sample_train_valvar(Y_val_cmplt, Y_tr_cmplt, 
-                                               train_info, val_size)
+                                               train_info, val_size, seed_value)
                 
                 X_train = X_tr_cmplt.loc[Y_train.index]
                 X_test = X_val_cmplt.loc[Y_test.index]
