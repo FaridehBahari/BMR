@@ -26,9 +26,10 @@ def read_pred(path_pred):
                          usecols=['binID', 'predRate'])
     return Y_pred
 
-def read_obs(path_Y):
+def read_obs(path_Y, remove_unMut):
     Y = read_response(path_Y)
-    Y = Y[Y['nMut'] != 0]
+    if remove_unMut:
+        Y = Y[Y['nMut'] != 0]
     Y_obs = Y['obsRates']
     Y_obs = Y_obs.to_frame(name = 'obsRates')
     return Y_obs
@@ -131,9 +132,10 @@ def assess_models(sim_setting):
     base_dir = sim_setting['base_dir']
     Nr_pair_acc = sim_setting['Nr_pair_acc']
     
+    remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
     
-    Y_obs_all_intergenic = read_obs(path_Y_train)
-    Y_obs_all_elems = read_obs(path_Y_test)
+    Y_obs_all_intergenic = read_obs(path_Y_train, remove_unMutated)
+    Y_obs_all_elems = read_obs(path_Y_test, remove_unMutated)
     
     acc_all = []
     corr_all = []
@@ -150,8 +152,8 @@ def assess_models(sim_setting):
             
         path_pred_unseen = f'{base_dir}/{save_name}/{save_name}_predTest.tsv'
         Y_pred_unseen = read_pred(path_pred_unseen)
-        Y_pred_unseen = Y_pred_unseen.loc[Y_obs_unseen.index]
-
+        Y_obs_unseen = Y_obs_unseen.loc[Y_pred_unseen.index]
+        
         if (Y_pred_unseen.index != Y_obs_unseen.index).all():
             raise ValueError('index mismatch')
         assessments_test = assess_model(Y_pred_unseen, Y_obs_unseen, 
@@ -161,7 +163,7 @@ def assess_models(sim_setting):
         
         path_pred_seen = f'{base_dir}/{save_name}/{save_name}_predTrain.tsv'
         Y_pred_seen = read_pred(path_pred_seen)
-        Y_pred_seen = Y_pred_seen.loc[Y_obs_seen.index]
+        Y_obs_seen = Y_obs_seen.loc[Y_pred_seen.index]
         
         
         if (Y_pred_seen.index != Y_obs_seen.index).all():
@@ -190,105 +192,6 @@ def assess_models(sim_setting):
     mse_all_df.to_csv(f'{base_dir}/mse_all.tsv', sep='\t')
     
 
-def assess_perBatch(dir_path):
-    setting_config = 'sim_setting.ini'
-    param_config = 'dev.ini'
-        
-    sim_setting = load_sim_settings_perBatchPerf(dir_path, setting_config,
-                                                 param_config)
-    save_name = list(sim_setting['models'].keys())[0]
-    sim_params = sim_setting['models'][save_name]
-    predict_func = sim_params['predict_func']
-    base_dir = sim_setting['base_dir']
-    directory_path = f'{base_dir + save_name}/models_interval/'
-    split_intergenic = ast.literal_eval(sim_setting['split_intergenic'])
-    # List all files in the directory
-    model_names = [os.path.join(directory_path, file) for file in os.listdir(directory_path)]
-
-    X_train, Y_train, X_test, Y_test = load_data(sim_setting)
-    Y_obs_all_intergenic = read_obs(sim_setting['path_Y_train'])
-    Y_obs_all_elems = read_obs(sim_setting['path_Y_test'])
-    Y_obs_val = read_obs(sim_setting['path_Y_validate'])
-    bins_val = Y_obs_val.index
-    if split_intergenic:
-        Y_obs_unseen = pd.concat([Y_obs_all_elems, Y_obs_val], axis= 0)
-        Y_obs_seen = Y_obs_all_intergenic.drop(bins_val)
-    else:
-        Y_obs_unseen = Y_obs_all_elems
-        Y_obs_seen = Y_obs_all_intergenic
-    
-    N = np.unique(Y_train.N)[0]
-    batch_indexes = []
-    for batch in range(sim_params['Args']['epochs'], 0, -1):
-        if batch % (sim_params['Args']['save_interval']) == 0:
-            btch_idx = f'batch_{batch}'
-            batch_indexes.append(btch_idx)
-    
-    batch_indexes = [batch_idx for batch_idx in batch_indexes if any(batch_idx in model_name for model_name in model_names)]
-    acc_file = f'{base_dir}/{save_name}/perBatch_assessments.tsv'
-    # acc_file = f'{base_dir}/{save_name}/perElement_accuracies.tsv'
-    # corr_file = f'{base_dir}/{save_name}/perElement_correlations.tsv'
-    # MSE_file = f'{base_dir}/{save_name}/perElement_MSEs.tsv'
-    if os.path.exists(acc_file):
-        accuracies = pd.read_csv(acc_file, sep='\t', index_col=0)
-        # Filter out batches that are already in the accuracies DataFrame
-        existing_batches = set(accuracies.index.str.replace('acc_', ''))
-        batch_indexes = [batch for batch in batch_indexes if batch not in existing_batches]
-    else:
-        accuracies = pd.DataFrame()
-    
-    # If no new batches to assess, return immediately
-    if not batch_indexes:
-        print("All batches already assessed.")
-        return
-    
-    for batch_id in batch_indexes:
-        
-        model_name = os.path.join(directory_path, f'{batch_id}_model.h5')
-        # Check if the model file exists before proceeding
-        if not os.path.exists(model_name):
-            print(f"Model file for {batch_id} not found. Skipping.")
-            continue
-
-        print(batch_id)
-        # print(model_name)
-
-        # load the model
-        with h5py.File(model_name, 'r') as f:
-            # load the model
-            model = load_model(f)
-
-        model_data = {'model': model, 
-                      'N': N,
-                      'NN_hyperparams': sim_params['Args']}
-        
-        # if classic_NN:
-            # model_data['response_type'] = sim_params['Args']['response']
-        model_data['response_type'] = 'rate'
-        
-        predRates_test = predict_func(model_data, X_test, "")
-        predRates_train = predict_func(model_data, X_train, "")
-        
-        
-        assessDF_test = assess_model(predRates_test, Y_obs_unseen,
-                                     sim_setting['Nr_pair_acc'], 
-                                     batch_id, per_element=True)
-        
-        
-        assessDF_train = assess_model(predRates_train, Y_obs_seen,
-                                     sim_setting['Nr_pair_acc'], 
-                                     batch_id, per_element=False)
-        
-        
-        
-
-        assessDF = pd.concat([assessDF_test, assessDF_train], axis=1)
-        accuracies = pd.concat([assessDF, accuracies], axis=0)
-        
-        accuracies.to_csv(f'{base_dir}/{save_name}/perBatch_assessments.tsv',
-                          sep='\t')
-        print('****************')
-        
         
 ###################################################################3
 def load_all_obsRates():
