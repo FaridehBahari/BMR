@@ -31,7 +31,10 @@ config_save(sim_file)
 print('repeated train and test for model evaluation is starting ...')
 end_t = time.time()
 X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt = load_data_sim_2(sim_setting)
+print(X_tr_cmplt.shape)
+print(X_val_cmplt.shape)
 repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt)
+
 end_t2 = time.time()
 
 print('************ Job Done *************')
