@@ -437,13 +437,15 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
             write_readme_file(m, readme_file_name)
             
             for i in range(10):
-                print(f'...... repeat number {i+1} of train-test for evaluation of the {name}')
+                print(f'.......... repeat number {i+1} of train-test for evaluation of the {name} ......')
                 seed_value = np.random.seed(seed_values[i])
                 Y_train, Y_test = sample_train_valvar(Y_val_cmplt, Y_tr_cmplt, 
                                                train_info, val_size, seed_value)
                 
                 X_train = X_tr_cmplt.loc[Y_train.index]
                 X_test = X_val_cmplt.loc[Y_test.index]
+                print(X_train.shape)
+                print(X_test.shape)
                 
                 fitted_Model = fit_model(X_train, Y_train, X_test, Y_test,
                                          m['run_func'], m['predict_func'], make_pred, m['Args'])
