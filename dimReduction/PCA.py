@@ -53,6 +53,26 @@ def dim_reduction_PCA(pca_model, subject_X):
 
 def save_PCA_reduced(X_train, X_test, path_save, save_name, variance_threshold = 0.8):
     os.makedirs(f'{path_save}/{save_name}/', exist_ok= True)
+    
+    # Check for NaN values in each column
+    nan_columns = X_train.columns[X_train.isna().any()].tolist()
+    print("X_train Columns with NaN values:", nan_columns)
+
+    # Check for NaN values in each row
+    nan_rows = X_train[X_train.isna().any(axis=1)].index.tolist()
+    print("X_train Rows with NaN values:", nan_rows)
+    X_train = X_train.fillna(0)
+    
+    # Check for NaN values in each column
+    nan_columns = X_test.columns[X_test.isna().any()].tolist()
+    print("X_train Columns with NaN values:", nan_columns)
+
+    # Check for NaN values in each row
+    nan_rows = X_test[X_test.isna().any(axis=1)].index.tolist()
+    print("X_train Rows with NaN values:", nan_rows)
+    X_test = X_test.fillna(0)
+    
+    
     pca_model = train_PCA(X_train, variance_threshold)
     pca_reduced_train = dim_reduction_PCA(pca_model, X_train)
     pca_reduced_test = dim_reduction_PCA(pca_model, X_test)
