@@ -123,6 +123,7 @@ X_dp =X_dp.loc[y_dp.index]
 Y_all = pd.concat([y_dp, y_var], axis = 0)
 
 x_all = pd.concat([x_var, X_dp], axis=0)
+x_all = x_all.fillna(0)
 X_all = x_all.loc[Y_all.index]
 
 

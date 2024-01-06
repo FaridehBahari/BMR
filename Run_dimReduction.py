@@ -8,7 +8,7 @@ from simulation_settings import load_sim_settings
 from dimReduction.PCA import save_PCA_reduced
 from dimReduction.autoencoder import train_autoencoder_model, dim_reduction_AE
 import pickle
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -79,7 +79,7 @@ print('files saved successfuly...')
 
 ###############
 import pandas as pd
-path_save = '../external/procInput/AEreduced_bs64_2000Ep_dim130/'
+
 reduced_test = pd.read_csv(f'{path_save}test_AEreduced.tsv', sep = '\t', 
                             index_col='binID')
 non_zero_columns_test = reduced_test.loc[:, (reduced_test != 0).any()]
