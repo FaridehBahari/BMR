@@ -404,17 +404,40 @@ def sample_train_valvar(var_interval_response, Y_train,
     
     return filtered_train_Y, Y_val
 
+
+def sample_validations(Y_train, val_size, seed_value):
+    
+    Y_train_L = Y_train.iloc[np.where(Y_train.length >= 20)]
+    
+    # sample from variable-size bins to have validation set
+    np.random.seed(seed_value)
+    val_indices = np.random.choice(Y_train_L.index, 
+                                    size=val_size, replace=False)
+    Y_val = Y_train_L.loc[val_indices]
+    
+    # remove validation bins from train set
+    filtered_train_Y = Y_train.loc[~Y_train.index.isin(val_indices)]
+    
+    return filtered_train_Y, Y_val
+
+
+
+
 def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt,
             make_pred = True, overwrite = True):
     
+    
     path_train_info = sim_setting['path_train_info']
+    
     models = sim_setting['models']
     base_dir = sim_setting['base_dir']
-    train_info = pd.read_csv(path_train_info, sep = '\t', index_col='binID')
+    
     val_size = 800 
     Nr_pair_acc = sim_setting['Nr_pair_acc']
 
-    train_info = train_info.loc[Y_tr_cmplt.index]
+    if path_train_info != '':
+        train_info = pd.read_csv(path_train_info, sep = '\t', index_col='binID')
+        train_info = train_info.loc[Y_tr_cmplt.index]
     
     seed_values = [1, 5, 14, 10, 20, 30, 40, 50, 60, 70, 80, 90, 77, 100, 110]
     
@@ -439,13 +462,27 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
             for i in range(10):
                 print(f'.......... repeat number {i+1} of train-test for evaluation of the {name} ......')
                 seed_value = np.random.seed(seed_values[i])
-                Y_train, Y_test = sample_train_valvar(Y_val_cmplt, Y_tr_cmplt, 
+                
+                if path_train_info != '':
+                    Y_train, Y_test = sample_train_valvar(Y_val_cmplt, Y_tr_cmplt, 
                                                train_info, val_size, seed_value)
+                else: 
+                    Y_train, Y_test = sample_validations(Y_tr_cmplt, val_size, seed_value)
                 
                 X_train = X_tr_cmplt.loc[Y_train.index]
                 X_test = X_val_cmplt.loc[Y_test.index]
                 print(X_train.shape)
                 print(X_test.shape)
+                
+                common_indices = X_test.index.intersection(X_train.index)
+
+                if not common_indices.empty:
+                    raise ValueError(f"Common indices found between X_test and X_train:{common_indices}")
+                    
+                else:
+                    print("No common indices found between X_test and X_train.")
+                    
+                
                 
                 fitted_Model = fit_model(X_train, Y_train, X_test, Y_test,
                                          m['run_func'], m['predict_func'], make_pred, m['Args'])
