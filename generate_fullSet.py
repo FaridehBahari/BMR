@@ -25,6 +25,18 @@ column_mapping = {
     'pphastCons46way': 'primates_phastCons46way',
     'pphyloP46way': 'primates_phyloP46way',
     'vphastCons46way': 'vertebrate_phastCons46way',
+    'A549_small': 'ENCFF460FMH',
+    'Caki2_small': 'ENCFF648KNC',
+      'G401_small':'ENCFF820URQ',
+    'LNCaPcloneFGC_small': 'ENCFF713UVF',
+    'NCI-H460_small': 'ENCFF807HEX',
+      'Panc1_small': 'ENCFF783PDP',
+     'RPMI-7951_small': 'ENCFF760OPW',
+      'SJCRH30_small': 'ENCFF025LMM',
+    'SK-MEL-5_small': 'ENCFF364HBJ' ,
+    'SK-N-DZ_small': 'ENCFF110KIR',
+    'SK-N-MC_small': 'ENCFF978RIC',
+     'T47D_small': 'ENCFF411JKH'
 }
 
 # Rename columns based on the mapping
@@ -35,24 +47,6 @@ x_var = pd.read_csv('../external/ftrMtrix/var_features.tsv',
                     sep = '\t',
                    index_col = 'binID')
 
-# Create a mapping of old names to new names
-column_mapping = {
-    'ENCFF460FMH': 'A549_small',
-    'ENCFF648KNC': 'Caki2_small',
-     'ENCFF820URQ': 'G401_small',
-    'ENCFF713UVF': 'LNCaPcloneFGC_small',
-    'ENCFF807HEX': 'NCI-H460_small',
-     'ENCFF783PDP': 'Panc1_small',
-     'ENCFF760OPW': 'RPMI-7951_small',
-     'ENCFF025LMM': 'SJCRH30_small',
-    'ENCFF364HBJ': 'SK-MEL-5_small',
-     'ENCFF110KIR': 'SK-N-DZ_small',
-    'ENCFF978RIC': 'SK-N-MC_small',
-     'ENCFF411JKH': 'T47D_small'
-}
-
-# Rename columns based on the mapping
-x_var.rename(columns=column_mapping, inplace=True)
 
 new_ftrs = ['APOBEC3A', 'E001-DNAMethylSBS', 'E002-DNAMethylSBS',
             'E003-DNAMethylSBS', 
