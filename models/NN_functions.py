@@ -216,7 +216,7 @@ def run_NN(X_train, Y_train, NN_hyperparams):
         save_weights_only=False,  # Set to True if you want to save only the model weights
         monitor='val_loss',  # You can choose a metric to monitor, e.g., 'val_loss'
         mode='auto',  # Auto mode for monitoring
-        save_freq=1  # Save the model after each epoch
+        save_freq=NN_hyperparams['save_interval']
     )
 
     # Build initial model
