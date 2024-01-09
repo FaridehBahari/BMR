@@ -85,12 +85,9 @@ def load_data_sim_2(sim_setting):
      # 'primates_phyloP46way', 'vertebrate_phastCons46way'
      ]
     
-    columns_to_exclude = [col for col in new_ftrs if col in X_val_cmplt.columns]
+    columns_to_exclude = [col for col in new_ftrs if col in X_tr_cmplt.columns]
     X_tr_cmplt = X_tr_cmplt.drop(columns=columns_to_exclude, errors='ignore') #
     X_val_cmplt = X_val_cmplt.drop(columns=columns_to_exclude, errors='ignore')
-
-    X_tr_cmplt = X_tr_cmplt.drop(columns=new_ftrs)
-    X_val_cmplt = X_val_cmplt.drop(columns=new_ftrs)
     
     # reorder val columns based on train columns
     X_val_cmplt = X_val_cmplt[X_tr_cmplt.columns]
