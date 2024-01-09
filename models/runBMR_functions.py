@@ -84,6 +84,10 @@ def load_data_sim_2(sim_setting):
      # , 'primates_phastCons46way', 
      # 'primates_phyloP46way', 'vertebrate_phastCons46way'
      ]
+    
+    columns_to_exclude = [col for col in new_ftrs if col in X_val_cmplt.columns]
+    X_tr_cmplt = X_tr_cmplt.drop(columns=columns_to_exclude, errors='ignore') #
+    X_val_cmplt = X_val_cmplt.drop(columns=columns_to_exclude, errors='ignore')
 
     X_tr_cmplt = X_tr_cmplt.drop(columns=new_ftrs)
     X_val_cmplt = X_val_cmplt.drop(columns=new_ftrs)
@@ -462,38 +466,39 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
             for i in range(10):
                 print(f'.......... repeat number {i+1} of train-test for evaluation of the {name} ......')
                 seed_value = np.random.seed(seed_values[i])
-                
+
+                if os.path.exists(f'{save_path_model}/rep_train_test/{name}_M{i+1}_assessment.tsv'):
+                    print(f"Skipping iteration {i+1} as the file already exists.")
+                    continue
+
                 if path_train_info != '':
                     Y_train, Y_test = sample_train_valvar(Y_val_cmplt, Y_tr_cmplt, 
                                                train_info, val_size, seed_value)
                 else: 
                     Y_train, Y_test = sample_validations(Y_tr_cmplt, val_size, seed_value)
-                
+
                 X_train = X_tr_cmplt.loc[Y_train.index]
                 X_test = X_val_cmplt.loc[Y_test.index]
                 print(X_train.shape)
                 print(X_test.shape)
-                
+
                 common_indices = X_test.index.intersection(X_train.index)
 
                 if not common_indices.empty:
                     raise ValueError(f"Common indices found between X_test and X_train:{common_indices}")
-                    
                 else:
                     print("No common indices found between X_test and X_train.")
-                    
-                
-                
+
                 fitted_Model = fit_model(X_train, Y_train, X_test, Y_test,
                                          m['run_func'], m['predict_func'], make_pred, m['Args'])
                 save_func = m['save_func']
                 itr = i+1
-                save_func(fitted_Model, base_dir, name, iteration = itr, save_model = False)
-                
+                save_func(fitted_Model, base_dir, name, iteration=itr, save_model=False)
+
                 Y_pred = fitted_Model.predRates_test
                 Y_obs = Y_test.nMut/(Y_test.N * Y_test.length)
                 assessments = assess_model(Y_pred, Y_obs, Nr_pair_acc, name, per_element=False)
-                
+
                 path_assessments = f'{save_path_model}/rep_train_test/{name}_M{i+1}_assessment.tsv'
                 assessments.to_csv(path_assessments, sep='\t')
         
