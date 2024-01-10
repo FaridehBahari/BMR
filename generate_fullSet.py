@@ -42,10 +42,19 @@ column_mapping = {
 # Rename columns based on the mapping
 X_dp.rename(columns=column_mapping, inplace=True)
 
+path2 = '../external/ftrMtrix/var_features.h5'
+f = h5py.File(path2, 'r')
+X = f['/X/block0_values'] # feature values
+ftr_names = f['/X/block0_items'][:] # feature names
+ftr_names = np.array([val.decode('utf-8') for val in ftr_names])
 
-x_var = pd.read_csv('../external/ftrMtrix/var_features.tsv', 
-                    sep = '\t',
-                   index_col = 'binID')
+bins = f['/X/axis1'][:]
+binID = np.array([val.decode('utf-8') for val in bins])
+
+x_var = pd.DataFrame(X, index=binID, columns=ftr_names)   
+f.close()
+
+ 
 
 
 new_ftrs = ['APOBEC3A', 'E001-DNAMethylSBS', 'E002-DNAMethylSBS',
