@@ -490,7 +490,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
                                          m['run_func'], m['predict_func'], make_pred, m['Args'])
                 save_func = m['save_func']
                 itr = i+1
-                save_func(fitted_Model, base_dir, name, iteration=itr, save_model=False)
+                save_func(fitted_Model, base_dir, name, iteration=itr, save_model=True)
 
                 Y_pred = fitted_Model.predRates_test
                 Y_obs = Y_test.nMut/(Y_test.N * Y_test.length)

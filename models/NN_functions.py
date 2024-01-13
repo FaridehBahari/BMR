@@ -401,8 +401,12 @@ def save_nn(fitted_Model, path_save, save_name, iteration = None, save_model = T
     
     if save_model:
         M = fitted_Model.model['model']
-        # Save the model using pickle
-        save_path_model = f'{path_save}/{save_name}/{save_name}_model.h5'
+        # Save the model 
+        if iteration is not None:
+            save_path_model = f'{path_save}/{save_name}/rep_train_test/{save_name}_model_{iteration}.h5'
+        else:
+            save_path_model = f'{path_save}/{save_name}/{save_name}_model.h5'
+            
         M.save(save_path_model)
         
         

@@ -69,7 +69,11 @@ def save_glm(fitted_Model, path_save, save_name, iteration = None, save_model = 
     if save_model:
         M = fitted_Model.model['model']
         # Save the model using pickle
-        save_path_model = f'{path_save}/{save_name}/{save_name}_model.pkl'
+        if iteration is not None:
+            save_path_model = f'{path_save}/{save_name}/rep_train_test/{save_name}_model_{iteration}.pkl'
+        else:
+            save_path_model = f'{path_save}/{save_name}/{save_name}_model.pkl'
+            
         with open(save_path_model, 'wb') as f: 
             pickle.dump(M, f)
     

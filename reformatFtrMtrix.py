@@ -21,3 +21,5 @@ convert_tsv_to_h5('../external/ftrMtrix/10k_features.tsv', '../external/ftrMtrix
 convert_tsv_to_h5('../external/ftrMtrix/1k_features.tsv', '../external/ftrMtrix/1k_features.h5')
 convert_tsv_to_h5('../external/ftrMtrix/var_dpIntergenic_features.tsv',
                   '../external/ftrMtrix/var_dpIntergenic_features.h5')
+convert_tsv_to_h5('../external/ftrMtrix/1Mnew_features.tsv',
+                  '../external/ftrMtrix/1M_new_features.h5')

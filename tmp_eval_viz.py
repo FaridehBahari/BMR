@@ -181,8 +181,8 @@ def plot_metric_boxplot(directory_paths, metric):
 
 # Example usage with multiple directory paths
 directory_paths = [
+    '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/10k/GBM/rep_train_test/',
     '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/100k/GBM/rep_train_test/',
-    '../external/BMR/output/bin_size_effect/10k/GBM/rep_train_test/',
     '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/1M/GBM/rep_train_test/'
     
 ]
