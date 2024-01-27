@@ -48,6 +48,46 @@ def run_rf(X_train, Y_train, RF_params):
     
     return model_data
 
+
+# from cuml.ensemble import RandomForestRegressor as cuRFRegressor
+# import cudf
+
+# def run_rf(X_train, Y_train, RF_params):
+#     # Convert data to cuDF format for GPU acceleration
+#     X_train_cudf = cudf.DataFrame(X_train)
+#     Y_train_cudf = cudf.Series(Y_train.obsRates)
+
+#     # Create a cuML RandomForestRegressor
+#     rf = cuRFRegressor(n_estimators=RF_params['n_estimators'], 
+#                        max_depth=RF_params['max_depth'],
+#                        verbose=2,
+#                        n_streams=RF_params['n_streams'])  # n_estimators: number of trees
+
+#     # Fit the model on GPU
+#     rf.fit(X_train_cudf, Y_train_cudf)
+
+#     feature_names = X_train.columns
+    
+#     model_data = {'model': rf,
+#                   'cols': feature_names}
+    
+#     return model_data
+
+
+# def predict_rf(model, X_test, length_elems):
+#     # Convert data to cuDF format for GPU acceleration
+#     X_test_cudf = cudf.DataFrame(X_test[model['cols']])
+
+#     # Make predictions on GPU
+#     pred_test_cudf = model['model'].predict(X_test_cudf)
+    
+#     # Convert predictions back to a Pandas DataFrame
+#     pred_test_df = pd.DataFrame({'predRate': pred_test_cudf.to_array().ravel()}, 
+#                                 index=X_test.index)
+    
+#     return pred_test_df
+
+
 def predict_rf(model, X_test, length_elems):
     
     X_test = X_test[model['cols']]

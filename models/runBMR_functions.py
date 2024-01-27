@@ -433,7 +433,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
     models = sim_setting['models']
     base_dir = sim_setting['base_dir']
     
-    val_size = 800 
+    val_size = X_tr_cmplt.shape[0]//5 
     Nr_pair_acc = sim_setting['Nr_pair_acc']
 
     if path_train_info != '':
