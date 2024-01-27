@@ -429,6 +429,8 @@ def sample_validations(Y_train, val_size, seed_value):
 
 def val_IDs_fixedElems(bed_tr, bed_val, seed_value, val_size):
     
+    bed_val['binID'] = bed_val[3]
+    bed_val = bed_val.set_index('binID')
     
     bed_val = bed_val.iloc[np.where(bed_val[2] - bed_val[1] >= 20)]
 
@@ -442,21 +444,23 @@ def val_IDs_fixedElems(bed_tr, bed_val, seed_value, val_size):
     bed_tr['binID'] = bed_tr[3]
     bed_tr = bed_tr.set_index('binID')
     bedObj_tr = BedTool.from_dataframe(bed_tr)
-    intersection = bedObj_tr.intersect(bedObj_val).to_dataframe()
-    val_set_binIDs = np.unique(intersection.name)
+    intersection_val = bedObj_tr.intersect(bedObj_val).to_dataframe()
+    val_set_binIDs = np.unique(intersection_val.name)
     
-    return val_set_binIDs
+    intersection_tr = bedObj_val.intersect(bedObj_tr).to_dataframe()
+    train_set_binIDs = np.unique(intersection_tr.name)
+    
+    return val_set_binIDs, train_set_binIDs
 
 
-def sample_train_val_fixedSize(Y_train, bed_tr, bed_var, seed_value, val_size):
+def sample_train_val_fixedSize(Y_train, Y_val, bed_tr, bed_var, seed_value, val_size):
     
-    val_set_binIDs = val_IDs_fixedElems(bed_tr, bed_var, seed_value, val_size)
+    train_set_binIDs, val_set_binIDs = val_IDs_fixedElems(bed_tr, bed_var, seed_value, val_size)
     
-    Y_val = Y_train.loc[val_set_binIDs]
+    Y_train = Y_train.loc[train_set_binIDs ]
+    Y_val = Y_val.loc[val_set_binIDs]
     
-    filtered_train_Y = Y_train[~Y_train.index.isin(Y_val.index)]
-    
-    return filtered_train_Y, Y_val
+    return Y_train, Y_val
     
 
 
@@ -480,7 +484,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
         train_info = train_info.loc[Y_tr_cmplt.index]
     elif fixed_size_train:
         bed_tr = pd.read_csv(path_bed_tr, sep = '\t', header = None)
-        bed_val = pd.read_csv(path_bed_var, sep = '\t', index_col = 3, header = None)
+        bed_val = pd.read_csv(path_bed_var, sep = '\t', header = None)
         
     seed_values = [1, 5, 14, 10, 20, 30, 40, 50, 60, 70, 80, 90, 77, 100, 110]
     
