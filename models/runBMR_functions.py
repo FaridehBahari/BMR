@@ -448,16 +448,15 @@ def val_IDs_fixedElems(bed_tr, bed_val, seed_value, val_size):
     val_set_binIDs = np.unique(intersection_val.name)
     
     intersection_tr = bedObj_val.intersect(bedObj_tr).to_dataframe()
-    train_set_binIDs = np.unique(intersection_tr.name)
+    non_train_set_binIDs = np.unique(intersection_tr.name)
     
-    return val_set_binIDs, train_set_binIDs
+    return val_set_binIDs, non_train_set_binIDs
 
 
 def sample_train_val_fixedSize(Y_train, Y_val, bed_tr, bed_var, seed_value, val_size):
     
-    train_set_binIDs, val_set_binIDs = val_IDs_fixedElems(bed_tr, bed_var, seed_value, val_size)
-    
-    Y_train = Y_train.loc[train_set_binIDs ]
+    val_set_binIDs, non_train_set_binIDs = val_IDs_fixedElems(bed_tr, bed_var, seed_value, val_size)
+    Y_train = Y_train[Y_train.index.isin(non_train_set_binIDs) ]
     Y_val = Y_val.loc[val_set_binIDs]
     
     return Y_train, Y_val
@@ -518,7 +517,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
                     Y_train, Y_test = sample_train_valvar(Y_val_cmplt, Y_tr_cmplt, 
                                                train_info, val_size, seed_value)
                 elif fixed_size_train: 
-                    Y_train, Y_test = sample_train_val_fixedSize(Y_tr_cmplt, bed_tr,
+                    Y_train, Y_test = sample_train_val_fixedSize(Y_tr_cmplt, Y_val_cmplt, bed_tr,
                                                                  bed_val, seed_value, val_size)
                     
                 else: 
@@ -526,6 +525,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
 
                 X_train = X_tr_cmplt.loc[Y_train.index]
                 X_test = X_val_cmplt.loc[Y_test.index]
+                
                 print(X_train.shape)
                 print(X_test.shape)
 
