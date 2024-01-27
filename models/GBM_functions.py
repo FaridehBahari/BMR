@@ -18,7 +18,10 @@ def build_GBM_params(config_file):
         'objective': config.get('train', 'objective'),
         'max_delta_step': config.getfloat('train', 'max_delta_step'),
         'eval_metric': config.get('train', 'eval_metric'),
-        'num_iteration': config.getint('train', 'num_iteration')
+        'num_iteration': config.getint('train', 'num_iteration'),
+        'tree_method': config.get('train', 'tree_method'), # 'gpu_hist' ,#if use_gpu else 'hist',
+        'gpu_id': 0#gpu_id if use_gpu else -1  # -1 means use CPU
+
     }
     return params
 
@@ -49,6 +52,9 @@ def run_gbm(X_train, Y_train, param):
     
     ftr_names = X_train.columns.values
     
+    if param['tree_method'] == 'gpu_hist':
+        ftr_names = X_train.columns.values.tolist()
+        
     dtrain = xgb.DMatrix(data=X_train, label=Y_train.nMut.values, feature_names=ftr_names)
     dvalid = xgb.DMatrix(data=X_valid, label=Y_valid.nMut.values, feature_names=ftr_names)
     
