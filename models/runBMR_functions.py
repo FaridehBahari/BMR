@@ -17,7 +17,8 @@ from models.repeated_train_test import save_metrics_summary
 
 import platform
 if platform.system() == 'Linux':
-    from pybedtools import BedTool, intersec
+    from pybedtools import BedTool
+    import pybedtools
     
 ###########
 def load_data_sim_2(sim_setting):
