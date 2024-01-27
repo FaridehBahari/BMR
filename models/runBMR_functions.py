@@ -513,7 +513,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
                     Y_train, Y_test = sample_train_valvar(Y_val_cmplt, Y_tr_cmplt, 
                                                train_info, val_size, seed_value)
                 elif fixed_size_train: 
-                    Y_train, Y_test = sample_train_val_fixedSize(Y_train, bed_tr,
+                    Y_train, Y_test = sample_train_val_fixedSize(Y_tr_cmplt, bed_tr,
                                                                  bed_val, seed_value, val_size)
                     
                 else: 
