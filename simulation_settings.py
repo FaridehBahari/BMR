@@ -54,7 +54,7 @@ def load_sim_settings(sim_file):
         'path_Y_validate': config_get(sim_config, 'main', 'path_Y_validate',sim_file),
         'path_X_validate': config_get(sim_config, 'main', 'path_X_validate',sim_file),
         'path_bed_tr': config_get(sim_config, 'main', 'path_bed_tr',sim_file),
-        'path_bed_val': config_get(sim_config, 'main', 'path_bed_val',sim_file),
+        'path_bed_var': config_get(sim_config, 'main', 'path_bed_var',sim_file),
         'scale': config_get(sim_config, 'main', 'scale',sim_file),
         'models': models,
         'base_dir': config_get(sim_config, 'main', 'base_dir',sim_file),
