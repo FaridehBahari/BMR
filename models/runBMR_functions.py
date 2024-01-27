@@ -14,6 +14,11 @@ import numpy as np
 from readFtrs_Rspns import scale_train, scale_test, load_data
 from performance.assessModels import assess_model
 from models.repeated_train_test import save_metrics_summary
+
+import platform
+if platform.system() == 'Linux':
+    from pybedtools import BedTool, intersec
+    
 ###########
 def load_data_sim_2(sim_setting):
     
@@ -421,14 +426,47 @@ def sample_validations(Y_train, val_size, seed_value):
     
     return filtered_train_Y, Y_val
 
+def val_IDs_fixedElems(bed_tr, bed_val, seed_value, val_size):
+    
+    
+    bed_val = bed_val.iloc[np.where(bed_val[2] - bed_val[1] >= 20)]
 
+    np.random.seed(seed_value)
+    val_indices = np.random.choice(bed_val.index, 
+                                    size=val_size, replace=False)
+
+    bed_val = bed_val.loc[val_indices]
+    bedObj_val = BedTool.from_dataframe(bed_val)
+    
+    bed_tr['binID'] = bed_tr[3]
+    bed_tr = bed_tr.set_index('binID')
+    bedObj_tr = BedTool.from_dataframe(bed_tr)
+    intersection = bedObj_tr.intersect(bedObj_val).to_dataframe()
+    val_set_binIDs = np.unique(intersection.name)
+    
+    return val_set_binIDs
+
+
+def sample_train_val_fixedSize(Y_train, bed_tr, bed_var, seed_value, val_size):
+    
+    val_set_binIDs = val_IDs_fixedElems(bed_tr, bed_var, seed_value, val_size)
+    
+    Y_val = Y_train.loc[val_set_binIDs]
+    
+    filtered_train_Y = Y_train[~Y_train.index.isin(Y_val.index)]
+    
+    return filtered_train_Y, Y_val
+    
 
 
 def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt,
             make_pred = True, overwrite = True):
     
     
+    fixed_size_train = ast.literal_eval(sim_setting['fixed_size_train'])
     path_train_info = sim_setting['path_train_info']
+    path_bed_tr = sim_setting['path_bed_tr']
+    path_bed_var = sim_setting['path_bed_var']
     
     models = sim_setting['models']
     base_dir = sim_setting['base_dir']
@@ -439,7 +477,10 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
     if path_train_info != '':
         train_info = pd.read_csv(path_train_info, sep = '\t', index_col='binID')
         train_info = train_info.loc[Y_tr_cmplt.index]
-    
+    elif fixed_size_train:
+        bed_tr = pd.read_csv(path_bed_tr, sep = '\t', header = None)
+        bed_val = pd.read_csv(path_bed_var, sep = '\t', index_col = 3, header = None)
+        
     seed_values = [1, 5, 14, 10, 20, 30, 40, 50, 60, 70, 80, 90, 77, 100, 110]
     
     
@@ -460,7 +501,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
         if not os.path.exists(readme_file_name) or overwrite:
             write_readme_file(m, readme_file_name)
             
-            for i in range(5):
+            for i in range(10):
                 print(f'.......... repeat number {i+1} of train-test for evaluation of the {name} ......')
                 seed_value = np.random.seed(seed_values[i])
 
@@ -471,6 +512,10 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
                 if path_train_info != '':
                     Y_train, Y_test = sample_train_valvar(Y_val_cmplt, Y_tr_cmplt, 
                                                train_info, val_size, seed_value)
+                elif fixed_size_train: 
+                    Y_train, Y_test = sample_train_val_fixedSize(Y_train, bed_tr,
+                                                                 bed_val, seed_value, val_size)
+                    
                 else: 
                     Y_train, Y_test = sample_validations(Y_tr_cmplt, val_size, seed_value)
 
@@ -502,4 +547,23 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
         print("=============================")
         dir_path = f'{save_path_model}/rep_train_test/'
         save_metrics_summary(dir_path)
+
+
+
+
+
+
+
+# seed_value = 7
+# val_size = 5000
+
+
+# path_bed_val = '../external/database/bins/proccessed/callable_intergenic_intervals_wo_pcawg.bed6'
+# bed_tr = pd.read_csv(path_bed_tr, sep = '\t', header = None)
+
+
+# path_bed_tr = '../external/database/bins/proccessed_bedtools/callable_50k_intergenic_bins.bed12'
+# bed_val = pd.read_csv(path_bed_val, sep = '\t', index_col = 3, header = None)
+
+
 

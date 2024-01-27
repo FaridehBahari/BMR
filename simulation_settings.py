@@ -60,8 +60,8 @@ def load_sim_settings(sim_file):
         'split_intergenic': config_get(sim_config, 'main', 'split_intergenic',sim_file),
         'n_sample': int(config_get(sim_config, 'main', 'n_sample',sim_file)),
         'DSmpl': config_get(sim_config, 'main', 'DSmpl',sim_file),
-        'Nr_pair_acc': int(config_get(sim_config, 'main', 'Nr_pair_acc',sim_file))
-        
+        'Nr_pair_acc': int(config_get(sim_config, 'main', 'Nr_pair_acc',sim_file)),
+        'fixed_size_train': config_get(sim_config, 'main', 'fixed_size_train',sim_file)
     }
     return settings
 
