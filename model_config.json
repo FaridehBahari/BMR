@@ -1,0 +1,24 @@
+{
+  "input_shape": [100, 1500],
+  "default_conv_params": {
+    "kernel_size": 3, 
+    "activation": "relu", 
+    "padding": "same"
+  },
+  "layers": [
+    {"type": "Conv1D", "filters": 32},
+    {"type": "Dropout", "rate": 0.1},
+    {"type": "MaxPooling1D", "pool_size": 2},
+    {"type": "Conv1D", "filters": 32},
+    {"type": "Dropout", "rate": 0.1},
+    {"type": "MaxPooling1D", "pool_size": 2},
+    {"type": "Conv1D", "filters": 32}, 
+    {"type": "UpSampling1D", "size": 2},
+    {"type": "Conv1D", "filters": 32},
+    {"type": "Dropout", "rate": 0.1},
+    {"type": "UpSampling1D", "size": 2},
+    {"type": "Conv1D", "filters": 32},
+    {"type": "Dropout", "rate": 0.1},
+    {"type": "Conv1D", "filters": 1, "kernel_size": 1, "activation": "relu"} 
+  ]
+}

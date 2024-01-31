@@ -9,7 +9,7 @@ from simulation_settings import load_sim_settings
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-gpu_fraction = 0.2
+gpu_fraction = 0.03
 set_gpu_memory_limit(gpu_fraction)
 
 

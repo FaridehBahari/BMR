@@ -478,9 +478,11 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
     Nr_pair_acc = sim_setting['Nr_pair_acc']
     
     if path_train_info != '':
+        '----- using trainInfo ----'
         train_info = pd.read_csv(path_train_info, sep = '\t', index_col='binID')
         train_info = train_info.loc[Y_tr_cmplt.index]
     elif fixed_size_train:
+        '------ using pybedtools -----'
         bed_tr = pd.read_csv(path_bed_tr, sep = '\t', header = None)
         bed_tr['binID'] = bed_tr[3]
         bed_tr = bed_tr.set_index('binID')
@@ -520,9 +522,11 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
                     continue
                 
                 if path_train_info != '':
+                    '----- using trainInfo ----'
                     Y_train, Y_test = sample_train_valvar(Y_val_cmplt, Y_tr_cmplt, 
                                                train_info, val_size, seed_value)
                 elif fixed_size_train: 
+                    '------ using pybedtools -----'
                     Y_train, Y_test = sample_train_val_fixedSize(Y_tr_cmplt, Y_val_cmplt, bed_tr,
                                                                  bed_val, seed_value, val_size)
                     
