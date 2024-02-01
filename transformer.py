@@ -9,7 +9,9 @@ from scipy.stats import spearmanr
 import pandas as pd
 from pickle import load
 from sklearn.metrics import mean_squared_error
-from AdjuscentBins import data_generator, test_data_generator, prepare_test_dataY
+from AdjuscentBins.generators import data_generator, test_data_generator, prepare_test_dataY
+
+
 
 gpu_fraction = 0.05
 set_gpu_memory_limit(gpu_fraction)
@@ -91,7 +93,7 @@ nn_batch_size = 23
 num_regions_per_sample = 100
 
 # Model Configuration
-input_shape = (num_regions_per_sample, 1500)  # 100 regions, each with 1500 features
+input_shape = (num_regions_per_sample, 1372)  # 100 regions, each with 1500 features
 transformer_model = build_transformer_model(input_shape)
 transformer_model.compile(optimizer='adam', loss=custom_poisson_loss)
 
@@ -101,7 +103,7 @@ transformer_model.compile(optimizer='adam', loss=custom_poisson_loss)
 
 path_response = '../external/BMR/rawInput/responseTabs_cnn/Pan_Cancer/1k_cnn_withInfo.tsv'
 path_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder.h5'
-path_scaler = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_RobustScaler.pkl'
+path_scaler = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_RobustScaler_1372Ftrs.pkl'
 
 transformer_model.fit(
     data_generator(path_features, path_response, path_scaler, nn_batch_size, num_regions_per_sample),
@@ -146,3 +148,5 @@ print(f'Spearman correlation for Middle Region: {mae}. p-value: {p_value}')
 
 
 spearmanr(Y_preds[np.where(obs_df['nMut'] != 0)], Y_obs[np.where(obs_df['nMut'] != 0)])
+
+

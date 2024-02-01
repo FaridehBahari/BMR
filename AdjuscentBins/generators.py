@@ -4,10 +4,35 @@ import h5py
 # from sklearn.preprocessing import StandardScaler
 from pickle import load
 
+def create_info_train(path_response, validation_bins = None):
+    info = pd.read_csv(path_response, sep='\t', index_col='binID')
+    info['mutRate'] = np.where((info['PCAWG_test_genomic_elements'] == 0),# |
+                                # (info['varSize_longer50'] == 0), #| 
+                                # (info['chr'] == 'chrX') | 
+                                # (info['chr'] == 'chrY') | 
+                                # (info['chr'] == 'chrM'),
+                                (info['nMut'] / (info['length'] * info['N'])),
+                                -1)
+    
+    if validation_bins is not None:
+        info['mutRate'] = np.where(info.index.isin(validation_bins),
+                                    -1, info['mutRate'])
+    
+    return info
 
 
 
-def data_generator(path_features, path_response, path_scaler, nn_batch_size, num_regions_per_sample=100):
+def create_info_test(path_test_response, path_bed_test, test_on = 'PCAWG_test_genomic_elements'):
+    info = pd.read_csv(path_test_response, sep='\t', index_col='binID')
+    info['mutRate'] = (info.nMut / (info.length * info.N))
+    bed = read_bed(path_bed_test)
+    info = info.loc[bed.index]
+    
+    return info
+    
+    
+
+def data_generator(path_features, info, path_scaler, nn_batch_size, num_regions_per_sample=100):
     new_ftrs = ['APOBEC3A', 'E001-DNAMethylSBS', 'E002-DNAMethylSBS', 'E003-DNAMethylSBS', 
      'E004-DNAMethylSBS', 'E005-DNAMethylSBS', 'E006-DNAMethylSBS', 
      'E007-DNAMethylSBS', 'E008-DNAMethylSBS', 'E009-DNAMethylSBS', 
@@ -54,14 +79,7 @@ def data_generator(path_features, path_response, path_scaler, nn_batch_size, num
      # , 'primates_phastCons46way', 
      # 'primates_phyloP46way', 'vertebrate_phastCons46way'
      ]
-    info = pd.read_csv(path_response, sep='\t', index_col='binID')
-    info['mutRate'] = np.where((info['PCAWG_test_genomic_elements'] == 0) |
-                                (info['varSize_longer50'] == 0), # | 
-                                # (info['chr'] == 'chrX') | 
-                                # (info['chr'] == 'chrY') | 
-                                # (info['chr'] == 'chrM'),
-                                (info['nMut'] / (info['length'] * info['N'])),
-                                -1)
+    
     
     scaler = load(open(path_scaler, 'rb'))
     with h5py.File(path_features, 'r') as f:
@@ -142,8 +160,8 @@ def data_generator(path_features, path_response, path_scaler, nn_batch_size, num
                 yield data_batch_X, data_batch_Y
                 
 
-def test_data_generator(path_test_features, path_test_response, path_bed_test, path_scaler, 
-                        nn_batch_size, num_regions_per_sample, middle_region_index):
+def test_data_generator(info, path_test_features, path_test_response, path_bed_test, path_scaler, 
+                        nn_batch_size, num_regions_per_sample, middle_region_index, test_on = 'PCAWG_test_genomic_elements'):
     
     new_ftrs = ['APOBEC3A', 'E001-DNAMethylSBS', 'E002-DNAMethylSBS', 'E003-DNAMethylSBS', 
      'E004-DNAMethylSBS', 'E005-DNAMethylSBS', 'E006-DNAMethylSBS', 
@@ -194,15 +212,12 @@ def test_data_generator(path_test_features, path_test_response, path_bed_test, p
     
     
     
-    info = pd.read_csv(path_test_response, sep='\t', index_col='binID')
-    info['mutRate'] = (info.nMut / (info.length * info.N))
-    bed = read_bed(path_bed_test)
-    info = info.loc[bed.index]
+    
     
     scaler = load(open(path_scaler, 'rb'))
     
     with h5py.File(path_test_features, 'r') as f:
-        pcawg_ov_binIdx = np.where(info['PCAWG_test_genomic_elements'] != 0)[0]
+        pcawg_ov_binIdx = np.where(info[test_on] != 0)[0]
         n_testElems = pcawg_ov_binIdx.shape[0]
         
         all_features = np.array([val.decode('utf-8') for val in f['/X/axis0']])
