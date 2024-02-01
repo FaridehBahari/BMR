@@ -19,6 +19,6 @@
     {"type": "UpSampling1D", "size": 2},
     {"type": "Conv1D", "filters": 32},
     {"type": "Dropout", "rate": 0.1},
-    {"type": "Conv1D", "filters": 1, "kernel_size": 1, "activation": "relu"} 
+    {"type": "Conv1D", "filters": 1, "kernel_size": 1, "activation": "softplus"} 
   ]
 }
