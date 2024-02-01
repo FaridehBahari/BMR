@@ -116,9 +116,6 @@ def data_generator(path_features, path_response, path_scaler, nn_batch_size, num
                 raw_data_batch_X = np.stack(subsets, axis=0)
                 reshaped_raw_data_batch_X = raw_data_batch_X.reshape(-1, raw_data_batch_X.shape[2])
                 
-                selected_cols = [col for col in f['/X/axis0'] if col not in new_ftrs]
-                reshaped_raw_data_batch_X = raw_data_batch_X.reshape[:,:, selected_cols].reshape(-1, len(selected_cols))
-                
                 scaled_data_batch_X = scaler.transform(reshaped_raw_data_batch_X)
                 data_batch_X = scaled_data_batch_X.reshape(raw_data_batch_X.shape)
                 
