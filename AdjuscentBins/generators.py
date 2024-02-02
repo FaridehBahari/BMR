@@ -11,19 +11,19 @@ import pybedtools
 def get_validation_bins(path_validation_set_gbm, path_bed_validation, path_bed_train):
     
     var_validation = pd.read_csv(path_validation_set_gbm, sep = '\t', index_col = 'binID')
+    var_binIDs_validation = var_validation.index
     var_bed = read_bed(path_bed_validation)
 
-    var_bed = var_bed.iloc[var_bed.index.isin(var_validation.index)]
+    var_bed = var_bed.iloc[var_bed.index.isin(var_binIDs_validation)]
     var_bed = pybedtools.BedTool.from_dataframe(var_bed)
 
     train_bed = pybedtools.BedTool(path_bed_train)
 
     # Perform an intersection
     intersection_tr= train_bed.intersect(var_bed, wa=True, u=True).to_dataframe() # wa: Write the original entry in A for each overlap. u: Write original A entry once if any overlaps found.
-
     non_train_set_binIDs = np.unique(intersection_tr.name)
     
-    return non_train_set_binIDs
+    return non_train_set_binIDs, var_binIDs_validation
     
 
 def create_info_train(path_response, validation_bins = None):

@@ -117,11 +117,11 @@ path_bed_train = '../external/database/bins/CNN/1k_window.bed'
 
 
 validation_bins = get_validation_bins(path_validation_set_gbm, 
-                                      path_bed_validation, path_bed_train)
+                                      path_bed_validation, path_bed_train)[0]
 
 train_info = create_info_train(path_response_tr, validation_bins)
 total_n_samples = train_info.shape[0] # 2881044
-
+print(f'Model training on {total_n_samples} bins')
 
 transformer_model.fit(
     data_generator(path_features, train_info, path_scaler, nn_batch_size, num_regions_per_sample),
@@ -129,18 +129,16 @@ transformer_model.fit(
     epochs=400
 )
 
-
+print('*******************************')
 
 #################################################################################
 path_test_response = '../external/BMR/rawInput/responseTabs_cnn/Pan_Cancer/1k_cnn_withInfo.tsv'
 path_bed_test = '../external/database/bins/CNN/1k_window.bed'
 path_test_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder.h5'
-
-
-
+test_on = 'validation_set'
 
 info_test = create_info_test(path_test_response, path_bed_test, validation_bins)
-test_on = 'validation_set'
+
 
 middle_region_index = 50
 y_pred = transformer_model.predict(test_data_generator(info_test, path_test_features,
