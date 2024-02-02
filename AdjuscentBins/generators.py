@@ -3,7 +3,6 @@ import numpy as np
 import h5py
 # from sklearn.preprocessing import StandardScaler
 from pickle import load
-from AdjuscentBins.generators import read_bed
 import pybedtools
 
 
