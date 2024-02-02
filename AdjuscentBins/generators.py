@@ -301,12 +301,15 @@ def read_bed(path_bed):
     return bed
 
 def prepare_test_dataY(info_test, nn_batch_size, 
-                       num_regions_per_sample, middle_region_index):
+                       num_regions_per_sample, middle_region_index, test_on):
     
     info = info_test
     
-    pcawg_ov_binIdx = np.where(info['PCAWG_test_genomic_elements'] != 0)[0]
-    mask = info.iloc[pcawg_ov_binIdx]
+    if test_on == 'PCAWG_test_genomic_elements':
+        pcawg_ov_binIdx = np.where(info['PCAWG_test_genomic_elements'] != 0)[0]
+        
+    elif test_on == 'validation_set':
+        pcawg_ov_binIdx = np.where(info['test_on'] == 1)[0]
     
     
     n_testElems = pcawg_ov_binIdx.shape[0]

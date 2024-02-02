@@ -9,7 +9,7 @@ from scipy.stats import spearmanr
 import pandas as pd
 from pickle import load
 from sklearn.metrics import mean_squared_error
-from AdjuscentBins.generators import data_generator, test_data_generator, prepare_test_dataY
+from AdjuscentBins.generators import data_generator, test_data_generator, prepare_test_dataY, get_validation_bins, create_info_test, create_info_train
 
 
 
@@ -101,14 +101,32 @@ transformer_model.compile(optimizer='adam', loss=custom_poisson_loss)
 
 
 
-path_response = '../external/BMR/rawInput/responseTabs_cnn/Pan_Cancer/1k_cnn_withInfo.tsv'
+path_response_tr = '../external/BMR/rawInput/responseTabs_cnn/Pan_Cancer/1k_cnn_withInfo.tsv'
 path_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder.h5'
 path_scaler = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_RobustScaler_1372Ftrs.pkl'
+path_validation_set_gbm = '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/rep_train_test/GBM_predTest5.tsv'
+path_bed_validation = '../external/database/bins/proccessed/callable_intergenic_intervals_wo_pcawg.bed6'
+path_bed_train = '../external/database/bins/CNN/1k_window.bed'
+
+
+
+
+
+
+
+
+
+validation_bins = get_validation_bins(path_validation_set_gbm, 
+                                      path_bed_validation, path_bed_train)
+
+train_info = create_info_train(path_response_tr, validation_bins)
+total_n_samples = train_info.shape[0] # 2881044
+
 
 transformer_model.fit(
-    data_generator(path_features, path_response, path_scaler, nn_batch_size, num_regions_per_sample),
-    steps_per_epoch=(2881044 // (num_regions_per_sample * nn_batch_size)),  # Total smaller batches per epoch
-    epochs=100
+    data_generator(path_features, train_info, path_scaler, nn_batch_size, num_regions_per_sample),
+    steps_per_epoch=(total_n_samples // (num_regions_per_sample * nn_batch_size)),  # Total smaller batches per epoch
+    epochs=400
 )
 
 
@@ -121,21 +139,23 @@ path_test_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_featu
 
 
 
-
-
-
+info_test = create_info_test(path_test_response, path_bed_test, validation_bins)
+test_on = 'validation_set'
 
 middle_region_index = 50
-y_pred = transformer_model.predict(test_data_generator(path_test_features, path_test_response,
-                                                       path_bed_test, path_scaler, nn_batch_size, 
+y_pred = transformer_model.predict(test_data_generator(info_test, path_test_features,
+                                                       path_test_response, 
+                                                       path_bed_test, 
+                                                       path_scaler,
+                                                       nn_batch_size,
                                                        num_regions_per_sample,
-                                                       middle_region_index))
+                                                       middle_region_index, test_on))
 
 
 
 Y_preds = y_pred[:, middle_region_index]
-Y_obs, obs_df =prepare_test_dataY(path_test_response,path_bed_test, nn_batch_size, 
-                         num_regions_per_sample, middle_region_index)
+Y_obs, obs_df =prepare_test_dataY(info_test, nn_batch_size, 
+                       num_regions_per_sample, middle_region_index, test_on)
 
 
 mse = mean_squared_error(Y_obs, Y_preds)
