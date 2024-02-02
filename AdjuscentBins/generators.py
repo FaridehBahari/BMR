@@ -3,14 +3,36 @@ import numpy as np
 import h5py
 # from sklearn.preprocessing import StandardScaler
 from pickle import load
+from AdjuscentBins.generators import read_bed
+import pybedtools
+
+
+
+
+def get_validation_bins(path_validation_set_gbm, path_bed_validation, path_bed_train):
+    
+    var_validation = pd.read_csv(path_validation_set_gbm, sep = '\t', index_col = 'binID')
+    var_bed = read_bed(path_bed_validation)
+
+    var_bed = var_bed.iloc[var_bed.index.isin(var_validation.index)]
+    var_bed = pybedtools.BedTool.from_dataframe(var_bed)
+
+    train_bed = pybedtools.BedTool(path_bed_train)
+
+    # Perform an intersection
+    intersection_tr= train_bed.intersect(var_bed, wa=True, u=True).to_dataframe() # wa: Write the original entry in A for each overlap. u: Write original A entry once if any overlaps found.
+
+    non_train_set_binIDs = np.unique(intersection_tr.name)
+    
+    return non_train_set_binIDs
+    
 
 def create_info_train(path_response, validation_bins = None):
+    
     info = pd.read_csv(path_response, sep='\t', index_col='binID')
-    info['mutRate'] = np.where((info['PCAWG_test_genomic_elements'] == 0),# |
-                                # (info['varSize_longer50'] == 0), #| 
-                                # (info['chr'] == 'chrX') | 
-                                # (info['chr'] == 'chrY') | 
-                                # (info['chr'] == 'chrM'),
+    info['mutRate'] = np.where((info['PCAWG_test_genomic_elements'] == 0)|
+                               (~info['chr'].isin(['chrX', 'chrY', 'chrM'])),
+                               
                                 (info['nMut'] / (info['length'] * info['N'])),
                                 -1)
     
@@ -22,17 +44,24 @@ def create_info_train(path_response, validation_bins = None):
 
 
 
-def create_info_test(path_test_response, path_bed_test, test_on = 'PCAWG_test_genomic_elements'):
+def create_info_test(path_test_response, path_bed_test, validation_bins = None): 
+    
     info = pd.read_csv(path_test_response, sep='\t', index_col='binID')
     info['mutRate'] = (info.nMut / (info.length * info.N))
     bed = read_bed(path_bed_test)
     info = info.loc[bed.index]
+    
+    if validation_bins is not None:
+        info['test_on'] = np.where(info.index.isin(validation_bins), 1, 0)
+    
+    info = info[~info['chr'].isin(['chrX', 'chrY', 'chrM'])]
     
     return info
     
     
 
 def data_generator(path_features, info, path_scaler, nn_batch_size, num_regions_per_sample=100):
+    
     new_ftrs = ['APOBEC3A', 'E001-DNAMethylSBS', 'E002-DNAMethylSBS', 'E003-DNAMethylSBS', 
      'E004-DNAMethylSBS', 'E005-DNAMethylSBS', 'E006-DNAMethylSBS', 
      'E007-DNAMethylSBS', 'E008-DNAMethylSBS', 'E009-DNAMethylSBS', 
@@ -161,7 +190,7 @@ def data_generator(path_features, info, path_scaler, nn_batch_size, num_regions_
                 
 
 def test_data_generator(info, path_test_features, path_test_response, path_bed_test, path_scaler, 
-                        nn_batch_size, num_regions_per_sample, middle_region_index, test_on = 'PCAWG_test_genomic_elements'):
+                        nn_batch_size, num_regions_per_sample, middle_region_index, test_on): # test_on can be: 'PCAWG_test_genomic_elements' or 'validation_set'
     
     new_ftrs = ['APOBEC3A', 'E001-DNAMethylSBS', 'E002-DNAMethylSBS', 'E003-DNAMethylSBS', 
      'E004-DNAMethylSBS', 'E005-DNAMethylSBS', 'E006-DNAMethylSBS', 
@@ -217,7 +246,14 @@ def test_data_generator(info, path_test_features, path_test_response, path_bed_t
     scaler = load(open(path_scaler, 'rb'))
     
     with h5py.File(path_test_features, 'r') as f:
-        pcawg_ov_binIdx = np.where(info[test_on] != 0)[0]
+        
+        # test_on can be: 'PCAWG_test_genomic_elements' or 'validation_set
+        if test_on == 'PCAWG_test_genomic_elements':
+            pcawg_ov_binIdx = np.where(info['PCAWG_test_genomic_elements'] != 0)[0]
+            
+        elif test_on == 'validation_set':
+            pcawg_ov_binIdx = np.where(info['test_on'] == 1)[0]
+            
         n_testElems = pcawg_ov_binIdx.shape[0]
         
         all_features = np.array([val.decode('utf-8') for val in f['/X/axis0']])
@@ -257,24 +293,18 @@ def test_data_generator(info, path_test_features, path_test_response, path_bed_t
 
 def read_bed(path_bed):
     bed = pd.read_csv(path_bed, sep = '\t', header = None)
-    excluded = bed.iloc[np.where((bed[0] == 'chrX') | (bed[0] == 'chrY') | (bed[0] == 'chrM'))]
+    # excluded = bed.iloc[np.where((bed[0] == 'chrX') | (bed[0] == 'chrY') | (bed[0] == 'chrM'))]
     
-    bed = bed.iloc[~bed.index.isin(excluded.index)]
+    # bed = bed.iloc[~bed.index.isin(excluded.index)]
     bed['binID'] = bed[3]
     bed = bed.set_index('binID')
     
     return bed
 
-def prepare_test_dataY(path_test_response,path_bed_test, nn_batch_size, 
+def prepare_test_dataY(info_test, nn_batch_size, 
                        num_regions_per_sample, middle_region_index):
     
-    
-    info = pd.read_csv(path_test_response, sep = '\t', index_col = 'binID')
-    info['mutRate'] = (info.nMut / (info.length * info.N))
-    
-    bed = read_bed(path_bed_test)
-    
-    info = info.loc[bed.index]
+    info = info_test
     
     pcawg_ov_binIdx = np.where(info['PCAWG_test_genomic_elements'] != 0)[0]
     mask = info.iloc[pcawg_ov_binIdx]
