@@ -300,20 +300,21 @@ def test_data_generator2(info, bins_var, path_test_fixed_features, path_scaler,
     
     with h5py.File(path_test_fixed_features, 'r') as f:
         
-        all_test_binIDs = np.array([val.decode('utf-8') for val in f['/X/axis1'][:]])
+        all_test_binIDs = np.array([val.decode('utf-8') for val in f['/X/axis1'][:]]) 
         
-        
-        all_features = np.array([val.decode('utf-8') for val in f['/X/axis0']])
+        all_features = np.array([val.decode('utf-8') for val in f['/X/axis0']]) 
         
         selected_cols = [col for col in all_features if col not in new_ftrs]
         Ftrs = np.where(np.isin(all_features,selected_cols))[0]
         
+        
         print(f'Please wait! The mutRates of {n_testElems} elements are predicting')
+        
+        middle_idx = np.where(info.index.isin(bins_var))[0]
         
         for i in range(0, n_testElems, nn_batch_size):
             
             
-            middle_idx = np.where(info.index.isin(bins_var))[0]
                       
             chunk_indices = middle_idx[i:i+nn_batch_size]
             
@@ -324,9 +325,10 @@ def test_data_generator2(info, bins_var, path_test_fixed_features, path_scaler,
                     print(f'there is not enough bins before/after element at index {idx}: {info.loc[idx]}')
                     continue
                 
+                 
                 test_binID = np.where(np.isin(all_test_binIDs, info.index[idx]))[0]
-                X_subset = f['/X/block0_values'][test_binID-middle_region_index:test_binID+middle_region_index]
-                X_subset = X_subset[:, Ftrs]
+                X_subset = f['/X/block0_values'][(test_binID-middle_region_index)[0]:(test_binID+middle_region_index)[0]]
+                X_subset = X_subset[:, Ftrs] 
                 
                 subsets.append(X_subset)
                 
@@ -345,4 +347,38 @@ def test_data_generator2(info, bins_var, path_test_fixed_features, path_scaler,
                     raise ValueError(f"Unexpected shape for data_X. Expected {expected_shape}, got {data_batch_X.shape}.")
                 
                 
-                yield data_batch_X
+            yield data_batch_X
+
+
+path_test_fixed_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/tmp_1k_varTest5.h5'
+y_pred = transformer_model.predict(test_data_generator2(info, bins_var, 
+                                                        path_test_fixed_features, 
+                                                        path_scaler, 
+                        nn_batch_size, num_regions_per_sample,
+                        middle_region_index))
+
+
+
+Y_preds = y_pred[:, middle_region_index]
+
+
+
+obs = info.loc[bins_var]
+obsRates = (obs.mutRate).values   #(111171,)
+
+Y_obs, obs_df =prepare_test_dataY(info_test, nn_batch_size, 
+                       num_regions_per_sample, middle_region_index, test_on)
+
+
+mse = mean_squared_error(Y_obs, Y_preds)
+print(f'Mean Squared Error for Middle Region: {mse}')
+mae = np.mean(np.abs(Y_obs - Y_preds))
+print(f'Mean Absolute Error for Middle Region: {mae}')
+
+corr, p_value = spearmanr(Y_preds, Y_obs)
+print(f'Spearman correlation for Middle Region: {mae}. p-value: {p_value}')
+
+
+spearmanr(Y_preds[np.where(obs_df['nMut'] != 0)], Y_obs[np.where(obs_df['nMut'] != 0)])
+
+

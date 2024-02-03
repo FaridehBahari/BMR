@@ -86,7 +86,7 @@ if (idx - middle_region_index < 0) or (idx + middle_region_index > info.shape[0]
 
 
 test_binID = np.where(np.isin(all_test_binIDs, info.index[idx]))[0]
-X_subset = f['/X/block0_values'][test_binID-middle_region_index:test_binID+middle_region_index]
+X_subset = f['/X/block0_values'][(test_binID-middle_region_index)[0]:(test_binID+middle_region_index)[0]]
 X_subset = X_subset[:, Ftrs]
 
 subsets.append(X_subset)
