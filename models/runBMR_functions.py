@@ -506,7 +506,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
         print(f'@@@@  model: {name}  @@@@')
         params = m['Args']
         save_path_model = f'{base_dir}/{name}/'
-        params['path_save'] = f'{save_path_model}models_interval/'
+        params['path_save'] = f'{save_path_model}rep_train_test/models/'
         # check_file_func = m['check_file_func']
         # file_check = check_file_func(base_dir, name)
         # if not os.path.exists(file_check) or sim_setting['overwrite']:
@@ -550,6 +550,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
                                          m['run_func'], m['predict_func'], make_pred, m['Args'])
                 save_func = m['save_func']
                 itr = i+1
+                                
                 save_func(fitted_Model, base_dir, name, iteration=itr, save_model=True)
                 
                 Y_pred = fitted_Model.predRates_test

@@ -115,3 +115,4 @@ print(f'Mean Absolute Error for Middle Region: {mae}')
 
 
 corr, p_value = spearmanr(y_pred_middle_region, y_test_middle_region)
+print(corr)

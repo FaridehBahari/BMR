@@ -310,13 +310,13 @@ def test_data_generator2(info, bins_var, path_test_fixed_features, path_scaler,
         
         print(f'Please wait! The mutRates of {n_testElems} elements are predicting')
         
-        middle_idx = np.where(info.index.isin(bins_var))[0]
+        middle_idxs = np.where(info.index.isin(bins_var))[0]
         
         for i in range(0, n_testElems, nn_batch_size):
             
             
                       
-            chunk_indices = middle_idx[i:i+nn_batch_size]
+            chunk_indices = middle_idxs[i:i+nn_batch_size]
             
             subsets = []
             
@@ -344,18 +344,23 @@ def test_data_generator2(info, bins_var, path_test_fixed_features, path_scaler,
                 
                 expected_shape = (nn_batch_size, num_regions_per_sample, len(Ftrs))
                 if data_batch_X.shape != expected_shape:
-                    raise ValueError(f"Unexpected shape for data_X. Expected {expected_shape}, got {data_batch_X.shape}.")
+                    # if i != len(range(0, n_testElems, nn_batch_size)) -1 :
+                        raise ValueError(f"Unexpected shape for data_X. Expected {expected_shape}, got {data_batch_X.shape}.")
                 
                 
             yield data_batch_X
 
 
 path_test_fixed_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/tmp_1k_varTest5.h5'
+
 y_pred = transformer_model.predict(test_data_generator2(info, bins_var, 
                                                         path_test_fixed_features, 
                                                         path_scaler, 
-                        nn_batch_size, num_regions_per_sample,
+                       1, num_regions_per_sample,
                         middle_region_index))
+
+
+
 
 
 
@@ -364,10 +369,7 @@ Y_preds = y_pred[:, middle_region_index]
 
 
 obs = info.loc[bins_var]
-obsRates = (obs.mutRate).values   #(111171,)
-
-Y_obs, obs_df =prepare_test_dataY(info_test, nn_batch_size, 
-                       num_regions_per_sample, middle_region_index, test_on)
+Y_obs = (obs.mutRate).values.reshape(-1, 1)   #(111171,)
 
 
 mse = mean_squared_error(Y_obs, Y_preds)
@@ -376,9 +378,9 @@ mae = np.mean(np.abs(Y_obs - Y_preds))
 print(f'Mean Absolute Error for Middle Region: {mae}')
 
 corr, p_value = spearmanr(Y_preds, Y_obs)
-print(f'Spearman correlation for Middle Region: {mae}. p-value: {p_value}')
+print(f'Spearman correlation for Middle Region: {corr}. p-value: {p_value}')
 
 
-spearmanr(Y_preds[np.where(obs_df['nMut'] != 0)], Y_obs[np.where(obs_df['nMut'] != 0)])
+spearmanr(Y_preds[np.where(obs['nMut'] != 0)], Y_obs[np.where(obs['nMut'] != 0)])
 
 

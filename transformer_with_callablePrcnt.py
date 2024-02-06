@@ -93,7 +93,7 @@ nn_batch_size = 23
 num_regions_per_sample = 100
 
 # Model Configuration
-input_shape = (num_regions_per_sample, 1372)  # 100 regions, each with 1500 features
+input_shape = (num_regions_per_sample, 1373)  # 100 regions, each with 1500 features
 transformer_model = build_transformer_model(input_shape)
 transformer_model.compile(optimizer='adam', loss=custom_poisson_loss)
 
@@ -102,8 +102,8 @@ transformer_model.compile(optimizer='adam', loss=custom_poisson_loss)
 
 
 path_response_tr = '../external/BMR/rawInput/responseTabs_cnn/Pan_Cancer/1k_cnn_withInfo.tsv'
-path_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder.h5'
-path_scaler = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_RobustScaler_1372Ftrs.pkl'
+path_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder_callFtr.h5'
+path_scaler = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_RobustScaler_1373FtrsCALL.pkl' #'../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_stdScaler_1373FtrsCALL.pkl'
 path_validation_set_gbm = '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/rep_train_test/GBM_predTest5.tsv'
 path_bed_validation = '../external/database/bins/proccessed/callable_intergenic_intervals_wo_pcawg.bed6'
 path_bed_train = '../external/database/bins/CNN/1k_window.bed'
@@ -125,12 +125,10 @@ print(f'Model training on {total_n_samples} bins')
 
 
 
-
            
 from tensorflow.keras.callbacks import ModelCheckpoint
 
-checkpoint_callback = ModelCheckpoint(filepath='../external/BMR/output/with_RepliSeq_HiC/tmp_transformer/withBlackList/model_checkpoint_{epoch:02d}.h5',
-                                      save_freq='epoch', period = 30)
+checkpoint_callback = ModelCheckpoint(filepath='../external/BMR/output/with_RepliSeq_HiC/tmp_transformer/withCallableFtr/model_checkpoint_{epoch:02d}.h5', save_freq='epoch', period = 30)
 
 transformer_model.fit(
          data_generator(path_features, train_info, path_scaler, nn_batch_size, num_regions_per_sample),
@@ -143,9 +141,9 @@ transformer_model.fit(
 print('*******************************')
 
 #################################################################################
-# load the last model
+
 from tensorflow.keras.models import load_model
-with h5py.File('../external/BMR/output/with_RepliSeq_HiC/tmp_transformer/withBlackList/model_checkpoint_390.h5', 'r') as f:
+with h5py.File('../external/BMR/output/with_RepliSeq_HiC/tmp_transformer/withCallableFtr/model_checkpoint_390.h5', 'r') as f:
             # load the model
     transformer_model = load_model(f, custom_objects = {'TransformerEncoderLayer': TransformerEncoderLayer,
                                                         'custom_poisson_loss': custom_poisson_loss})
@@ -153,9 +151,10 @@ with h5py.File('../external/BMR/output/with_RepliSeq_HiC/tmp_transformer/withBla
 
 
 
+
 path_test_response = '../external/BMR/rawInput/responseTabs_cnn/Pan_Cancer/1k_cnn_withInfo.tsv'
 path_bed_test = '../external/database/bins/CNN/1k_window.bed'
-path_test_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder.h5'
+path_test_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder_callFtr.h5'
 test_on = 'validation_set'
 
 info_test = create_info_test(path_test_response, path_bed_test, validation_bins)
@@ -184,8 +183,3 @@ print(f'Mean Absolute Error for Middle Region: {mae}')
 
 corr, p_value = spearmanr(Y_preds, Y_obs)
 print(f'Spearman correlation for Middle Region: {corr}. p-value: {p_value}')
-
-
-# spearmanr(Y_preds[np.where(obs_df['nMut'] != 0)], Y_obs[np.where(obs_df['nMut'] != 0)])
-
-

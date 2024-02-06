@@ -1,4 +1,21 @@
 import pandas as pd
+from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+import h5py
+from pickle import dump
+import numpy as np
+
+def read_bed(path_bed):
+    bed = pd.read_csv(path_bed, sep = '\t', header = None)
+    # excluded = bed.iloc[np.where((bed[0] == 'chrX') | (bed[0] == 'chrY') | (bed[0] == 'chrM'))]
+    
+    # bed = bed.iloc[~bed.index.isin(excluded.index)]
+    bed['binID'] = bed[3]
+    bed = bed.set_index('binID')
+    
+    return bed
+
 
 
 def convert_tsv_to_h5(input_path, output_path):
@@ -11,31 +28,9 @@ def convert_tsv_to_h5(input_path, output_path):
     # Save as H5 file
     X.to_hdf(output_path, key='/X', mode='w', data_columns=True)
 
-# reformat FtrMtrixes
-# convert_tsv_to_h5('../external/ftrMtrix/1M_features.tsv', '../external/ftrMtrix/1M_features.h5')
-# convert_tsv_to_h5('../external/ftrMtrix/pcawg_features.tsv', '../external/ftrMtrix/pcawg_features.h5')
-# convert_tsv_to_h5('../external/ftrMtrix/var_features.tsv', '../external/ftrMtrix/var_features.h5')
-# convert_tsv_to_h5('../external/ftrMtrix/100k_features.tsv', '../external/ftrMtrix/100k_features.h5')
-# convert_tsv_to_h5('../external/ftrMtrix/50k_features.tsv', '../external/ftrMtrix/50k_features.h5')
-# convert_tsv_to_h5('../external/ftrMtrix/10k_features.tsv', '../external/ftrMtrix/10k_features.h5')
-# convert_tsv_to_h5('../external/ftrMtrix/1k_features.tsv', '../external/ftrMtrix/1k_features.h5')
-# convert_tsv_to_h5('../external/ftrMtrix/var_dpIntergenic_features.tsv',
-#                   '../external/ftrMtrix/var_dpIntergenic_features.h5')
-convert_tsv_to_h5('../external/ftrMtrix/bedtools/1M_features.tsv',
-                  '../external/ftrMtrix/bedtools/1M_features.h5')
 
-convert_tsv_to_h5('../external/ftrMtrix/bedtools/FullSet_features.tsv',
-                  '../external/ftrMtrix/bedtools/FullSet_features.h5')
 
-convert_tsv_to_h5('../external/ftrMtrix/bedtools/100k_features.tsv',
-                  '../external/ftrMtrix/bedtools/100k_features.h5')
 
-convert_tsv_to_h5('../external/ftrMtrix/bedtools/50k_features.tsv',
-                  '../external/ftrMtrix/bedtools/50k_features.h5')
-
-#############################################################################
-
-from sklearn.preprocessing import RobustScaler
 
 def scale_data(X, scaler=None):
     """ Scale X with robust scaling.
@@ -58,10 +53,60 @@ def scale_data(X, scaler=None):
         return scaler.transform(X), scaler
 
 
-import pandas as pd
-import h5py
-from pickle import dump
-import numpy as np
+
+
+
+def standard_scale_data(X, scaler=None):
+    """ Scale X with robust scaling.
+    
+    Args:
+        X (np.array): feature matrix indexed by binID.
+        scaler (RobustScaler): pre-trained scaler. Default is None
+        
+    Returns:
+        np.array: normalized feature matrix.
+        RobustScaler: robust scaler fitted with training data,
+            only returned when there is no pre-trained scaler.
+    
+    """
+    if scaler is not None:
+        return scaler.transform(X)
+    else:
+        scaler = StandardScaler(copy=False)
+        scaler.fit(X)
+        return scaler.transform(X), scaler
+
+
+
+# reformat FtrMtrixes
+# convert_tsv_to_h5('../external/ftrMtrix/1M_features.tsv', '../external/ftrMtrix/1M_features.h5')
+# convert_tsv_to_h5('../external/ftrMtrix/pcawg_features.tsv', '../external/ftrMtrix/pcawg_features.h5')
+# convert_tsv_to_h5('../external/ftrMtrix/var_features.tsv', '../external/ftrMtrix/var_features.h5')
+# convert_tsv_to_h5('../external/ftrMtrix/100k_features.tsv', '../external/ftrMtrix/100k_features.h5')
+# convert_tsv_to_h5('../external/ftrMtrix/50k_features.tsv', '../external/ftrMtrix/50k_features.h5')
+# convert_tsv_to_h5('../external/ftrMtrix/10k_features.tsv', '../external/ftrMtrix/10k_features.h5')
+# convert_tsv_to_h5('../external/ftrMtrix/1k_features.tsv', '../external/ftrMtrix/1k_features.h5')
+# convert_tsv_to_h5('../external/ftrMtrix/var_dpIntergenic_features.tsv',
+#                   '../external/ftrMtrix/var_dpIntergenic_features.h5')
+# convert_tsv_to_h5('../external/ftrMtrix/bedtools/1M_features.tsv',
+#                   '../external/ftrMtrix/bedtools/1M_features.h5')
+
+# convert_tsv_to_h5('../external/ftrMtrix/bedtools/FullSet_features.tsv',
+#                   '../external/ftrMtrix/bedtools/FullSet_features.h5')
+
+# convert_tsv_to_h5('../external/ftrMtrix/bedtools/100k_features.tsv',
+#                   '../external/ftrMtrix/bedtools/100k_features.h5')
+
+# convert_tsv_to_h5('../external/ftrMtrix/bedtools/50k_features.tsv',
+#                   '../external/ftrMtrix/bedtools/50k_features.h5')
+
+#############################################################################
+
+
+
+
+
+
 
 # with h5py.File('../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder.h5', 'r') as f:
 #      X = f['/X/block0_values'] 
@@ -128,4 +173,63 @@ with h5py.File('../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_be
      print(X.shape)
      Sc_data = scale_data(X)
      dump(Sc_data[1], open('../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_RobustScaler_1372Ftrs.pkl', 'wb'))
+
+
+
+
+
+with h5py.File('../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder.h5', 'r') as f:
+     all_features = np.array([val.decode('utf-8') for val in f['/X/axis0']])
+     selected_cols = [col for col in all_features if col not in new_ftrs]
+     X = f['/X/block0_values'] 
+     print(X.shape)
+     X = X[:, np.where(np.isin(all_features,selected_cols))[0]]
+     print(X.shape)
+     Sc_data = standard_scale_data(X)
+     dump(Sc_data[1], open('../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_stdScaler_1372Ftrs.pkl', 'wb'))
+
+
+
+
+###########################################################################
+path_bed_1k_cnn = '../external/database/bins/CNN/1k_window.bed'
+
+path_ftrs = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder.h5'
+path_callable_percent = '../external/output/1k_cnn/pcawg_callable_var.info'
+
+bed = read_bed(path_bed_1k_cnn)
+X = pd.read_hdf(path_ftrs, index_col = 'binID')
+X =X.loc[bed.index]
+
+callable_percent = pd.read_csv(path_callable_percent, sep = '\t', index_col='binID')
+callable_percent = callable_percent.loc[bed.index]
+callable_df = callable_percent['callable']
+
+new_X = pd.concat([X,callable_df], axis = 1)
+new_X = new_X.loc[bed.index]
+new_X.to_hdf('../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder_callFtr.h5', key='/X', mode='w'
+, data_columns=True)
+
+
+with h5py.File('../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder_callFtr.h5', 'r') as f:
+     all_features = np.array([val.decode('utf-8') for val in f['/X/axis0']])
+     selected_cols = [col for col in all_features if col not in new_ftrs]
+     X = f['/X/block0_values'] 
+     print(X.shape)
+     X = X[:, np.where(np.isin(all_features,selected_cols))[0]]
+     print(X.shape)
+     Sc_data = standard_scale_data(X)
+     dump(Sc_data[1], open('../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_stdScaler_1373FtrsCALL.pkl', 'wb'))
+
+
+with h5py.File('../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder_callFtr.h5', 'r') as f:
+     all_features = np.array([val.decode('utf-8') for val in f['/X/axis0']])
+     selected_cols = [col for col in all_features if col not in new_ftrs]
+     X = f['/X/block0_values'] 
+     print(X.shape)
+     X = X[:, np.where(np.isin(all_features,selected_cols))[0]]
+     print(X.shape)
+     Sc_data = scale_data(X)
+     dump(Sc_data[1], open('../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_RobustScaler_1373FtrsCALL.pkl', 'wb'))
+
 

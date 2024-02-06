@@ -12,8 +12,10 @@ import pickle
 from readFtrs_Rspns import read_fi
 from sklearn.ensemble import RandomForestRegressor
 from readFtrs_Rspns import save_preds_tsv
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+processor = 'CPU'
+
 
 def build_RF_params(config_file):
     config = configparser.ConfigParser()
@@ -25,7 +27,8 @@ def build_RF_params(config_file):
     params = {
         'n_estimators': config.getint('train', 'n_estimators'),
         'max_depth': max_depth,
-        'n_threads': config.getint('train', 'n_threads')
+        'n_threads': config.getint('train', 'n_threads'),
+        'processor': config.get('main', 'processor')
     }
     return params
 
@@ -49,43 +52,47 @@ def run_rf(X_train, Y_train, RF_params):
     return model_data
 
 
-# from cuml.ensemble import RandomForestRegressor as cuRFRegressor
-# import cudf
-
-# def run_rf(X_train, Y_train, RF_params):
-#     # Convert data to cuDF format for GPU acceleration
-#     X_train_cudf = cudf.DataFrame(X_train)
-#     Y_train_cudf = cudf.Series(Y_train.obsRates)
-
-#     # Create a cuML RandomForestRegressor
-#     rf = cuRFRegressor(n_estimators=RF_params['n_estimators'], 
-#                        max_depth=RF_params['max_depth'],
-#                        verbose=2,
-#                        n_streams=RF_params['n_streams'])  # n_estimators: number of trees
-
-#     # Fit the model on GPU
-#     rf.fit(X_train_cudf, Y_train_cudf)
-
-#     feature_names = X_train.columns
+if processor == 'GPU':
+    from cuml.ensemble import RandomForestRegressor as cuRFRegressor
+    import cudf 
     
-#     model_data = {'model': rf,
-#                   'cols': feature_names}
-    
-#     return model_data
+    def run_rf_gpu(X_train, Y_train, RF_params):
+        
+        # Convert data to cuDF format for GPU acceleration
+        X_train_cudf = cudf.DataFrame(X_train)
+        Y_train_cudf = cudf.Series(Y_train.obsRates)
+        
+        # Create a cuML RandomForestRegressor
+        rf = cuRFRegressor(n_estimators=RF_params['n_estimators'], 
+                            max_depth= RF_params['max_depth'],
+                            verbose=2,
+                            n_streams=RF_params['n_estimators'])  # n_estimators: number of trees
+        
+        # Fit the model on GPU
+        rf.fit(X_train_cudf, Y_train_cudf)
+        
+        feature_names = X_train.columns
+        
+        model_data = {'model': rf,
+                      'cols': feature_names}
+        
+        return model_data
 
 
-# def predict_rf(model, X_test, length_elems):
-#     # Convert data to cuDF format for GPU acceleration
-#     X_test_cudf = cudf.DataFrame(X_test[model['cols']])
+    def predict_rf_gpu(model, X_test, length_elems):
+        
+        # Convert data to cuDF format for GPU acceleration
+        X_test_cudf = cudf.DataFrame(X_test[model['cols']])
+        
+        # Make predictions on GPU
+        pred_test_cudf = model['model'].predict(X_test_cudf)
+        
+        # Convert predictions back to a Pandas DataFrame
+        pred_test_df = pd.DataFrame({'predRate': pred_test_cudf.to_pandas().values.ravel()}, 
+                                    index=X_test.index)
+        
+        return pred_test_df
 
-#     # Make predictions on GPU
-#     pred_test_cudf = model['model'].predict(X_test_cudf)
-    
-#     # Convert predictions back to a Pandas DataFrame
-#     pred_test_df = pd.DataFrame({'predRate': pred_test_cudf.to_array().ravel()}, 
-#                                 index=X_test.index)
-    
-#     return pred_test_df
 
 
 def predict_rf(model, X_test, length_elems):
@@ -98,8 +105,24 @@ def predict_rf(model, X_test, length_elems):
     return prediction_df
 
 
+
+def RF_modelGPU_info(save_name, *args):
+    params = build_RF_params(args[0])
+        
+    model_dict = {"save_name" : save_name,
+                  "Args" : params,
+                  "run_func": run_rf_gpu,
+                  "predict_func": predict_rf_gpu,
+                  "save_func": save_rf,
+                  "check_file_func": check_file_rf
+                  }
+    
+    return model_dict
+
+
 def RF_model_info(save_name, *args):
     params = build_RF_params(args[0])
+       
     model_dict = {"save_name" : save_name,
                   "Args" : params,
                   "run_func": run_rf,

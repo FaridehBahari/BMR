@@ -1,3 +1,57 @@
+# import pandas as pd
+# import numpy as np
+
+
+# path_var_response = '../external/BMR/rawInput/responseTabs/Pan_Cancer/var_bins.tsv'
+# path_bed_var = '../external/database/bins/proccessed/callable_intergenic_intervals_wo_pcawg.bed6'
+
+
+
+# bed_var = pd.read_csv(path_bed_var, sep = '\t', header=None)
+# bed_var = bed_var.iloc[np.where((bed_var[0]).isin(['chr1', 'chr2', 'chr3']))]
+
+
+# var_Y = pd.read_csv(path_var_response, sep = '\t', index_col = 'binID')
+# var_Y = var_Y.loc[bed_var[3]]
+
+# var_Y.to_csv('../external/tmp_transformer/chr1_3_varY.tsv', sep = '\t')
+
+
+
+# Y_1k = pd.read_csv('../external/BMR/rawInput/responseTabs_cnn/Pan_Cancer/resTab_bed6Generated_1k_cnn_withInfo.tsv', 
+#                    sep = '\t', index_col = 'binID')
+
+# def read_bed(path_bed):
+#     bed = pd.read_csv(path_bed, sep = '\t', header = None)
+#     # excluded = bed.iloc[np.where((bed[0] == 'chrX') | (bed[0] == 'chrY') | (bed[0] == 'chrM'))]
+    
+#     # bed = bed.iloc[~bed.index.isin(excluded.index)]
+#     bed['binID'] = bed[3]
+#     bed = bed.set_index('binID')
+    
+#     return bed
+
+
+# bed_1k_chr1_3 = read_bed('../external/tmp/bed_1kCNN_chr1_3.bed')
+# Y_1k_chr1_3 = Y_1k.loc[bed_1k_chr1_3.index]
+
+# Y_1k_chr1_3.to_csv('../external/tmp/Y_1k_chr1_3.tsv', sep = '\t')
+
+# with h5py.File('../external/tmp_transformer/ftrMtrix_chr1_3.h5', 'r') as f:
+#      all_features = np.array([val.decode('utf-8') for val in f['/X/axis0']])
+#      selected_cols = [col for col in all_features if col not in new_ftrs]
+#      X = f['/X/block0_values'] 
+#      print(X.shape)
+#      X = X[:, np.where(np.isin(all_features,selected_cols))[0]]
+#      print(X.shape)
+#      Sc_data = standard_scale_data(X)
+#      dump(Sc_data[1], open('../external/tmp_transformer/1kChr1_3_cnn_stdScaler_1373Ftrs.pkl', 'wb'))
+
+
+
+
+
+
 import numpy as np
 from tensorflow.keras.layers import Input,  Dropout, Dense
 from tensorflow.keras.models import Model
@@ -101,12 +155,16 @@ transformer_model.compile(optimizer='adam', loss=custom_poisson_loss)
 
 
 
-path_response_tr = '../external/BMR/rawInput/responseTabs_cnn/Pan_Cancer/1k_cnn_withInfo.tsv'
-path_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder.h5'
-path_scaler = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_RobustScaler_1372Ftrs.pkl'
-path_validation_set_gbm = '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/rep_train_test/GBM_predTest5.tsv'
-path_bed_validation = '../external/database/bins/proccessed/callable_intergenic_intervals_wo_pcawg.bed6'
-path_bed_train = '../external/database/bins/CNN/1k_window.bed'
+path_response_tr = '../external/tmp_transformer/Y_1k_chr1_3.tsv'
+
+path_features = '../external/tmp_transformer/ftrMtrix_chr1_3.h5'
+
+path_scaler = '../external/tmp_transformer/1kChr1_3_cnn_stdScaler_1372Ftrs.pkl'
+
+path_validation_set_gbm = '../external/tmp_transformer/compareModels/GBM/rep_train_test/GBM_predTest1.tsv'
+
+path_bed_validation = '../external/tmp_transformer/bed_var_chr1_3.bed'
+path_bed_train = '../external/tmp_transformer/bed_1kCNN_chr1_3.bed'
 
 
 
@@ -125,11 +183,10 @@ print(f'Model training on {total_n_samples} bins')
 
 
 
-
            
 from tensorflow.keras.callbacks import ModelCheckpoint
 
-checkpoint_callback = ModelCheckpoint(filepath='../external/BMR/output/with_RepliSeq_HiC/tmp_transformer/withBlackList/model_checkpoint_{epoch:02d}.h5',
+checkpoint_callback = ModelCheckpoint(filepath='../external/tmp_transformer/model_checkpoint_{epoch:02d}.h5',
                                       save_freq='epoch', period = 30)
 
 transformer_model.fit(
@@ -143,19 +200,18 @@ transformer_model.fit(
 print('*******************************')
 
 #################################################################################
-# load the last model
+
+# # load the last model
 from tensorflow.keras.models import load_model
-with h5py.File('../external/BMR/output/with_RepliSeq_HiC/tmp_transformer/withBlackList/model_checkpoint_390.h5', 'r') as f:
+with h5py.File('../external/tmp_transformer/model_checkpoint_420.h5', 'r') as f:
             # load the model
     transformer_model = load_model(f, custom_objects = {'TransformerEncoderLayer': TransformerEncoderLayer,
                                                         'custom_poisson_loss': custom_poisson_loss})
 
 
-
-
-path_test_response = '../external/BMR/rawInput/responseTabs_cnn/Pan_Cancer/1k_cnn_withInfo.tsv'
-path_bed_test = '../external/database/bins/CNN/1k_window.bed'
-path_test_features = '../../../../Projects/bahari_work/ftrMtrix/cnn/1k_cnn_features_bedOrder.h5'
+path_test_response = '../external/tmp_transformer/Y_1k_chr1_3.tsv'
+path_bed_test = '../external/tmp_transformer/bed_1kCNN_chr1_3.bed'
+path_test_features = '../external/tmp_transformer/ftrMtrix_chr1_3.h5'
 test_on = 'validation_set'
 
 info_test = create_info_test(path_test_response, path_bed_test, validation_bins)
