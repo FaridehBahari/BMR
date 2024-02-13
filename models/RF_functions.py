@@ -106,7 +106,7 @@ def predict_rf(model, X_test, length_elems):
 
 
 
-def RF_modelGPU_info(save_name, *args):
+def RF_GPU_model_info(save_name, *args):
     params = build_RF_params(args[0])
         
     model_dict = {"save_name" : save_name,
