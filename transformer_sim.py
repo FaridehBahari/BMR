@@ -70,18 +70,26 @@ def build_transformer_model(input_shape, num_layers=4, d_model=128, num_heads=4,
     return model
 
 def custom_poisson_loss(y_true, y_pred):
-      mask = tf.cast(tf.not_equal(y_true, -1.0), tf.float32)  # Mask for available rates
-      
-      # Ensure y_pred is greater than 0 to avoid log(0)
-      y_pred_safe = tf.maximum(y_pred, tf.keras.backend.epsilon())
-      
-      # Compute element-wise Poisson loss
-      loss = y_pred_safe - y_true * tf.math.log(y_pred_safe)
-      
-      loss *= mask  # Element-wise multiplication, broadcasting loss to match mask shape
-      
-      # Return the loss without summing and averaging across the sequence
-      return loss  # Shape [batch_size, sequence_length]
+    # Create a mask for valid (available) data points where y_true is not equal to -1.0
+    mask = tf.cast(tf.not_equal(y_true, -1.0), tf.float32)
+    
+    # Ensure y_pred is greater than 0 to avoid log(0)
+    y_pred_safe = tf.maximum(y_pred, tf.keras.backend.epsilon())
+    
+    # Compute element-wise Poisson loss
+    loss = y_pred_safe - y_true * tf.math.log(y_pred_safe)
+    
+    # Apply mask to ignore the loss from invalid (-1.0) y_true values
+    loss *= mask
+    print(loss.shape)
+    # Optionally, you might want to normalize the loss by the number of valid data points
+    # This step is optional and depends on how you want to treat the loss per batch
+    loss_sum = tf.reduce_sum(loss)  # Sum the loss across all elements
+    mask_sum = tf.reduce_sum(mask)  # Sum the mask to count valid data points
+    loss_mean = loss_sum / tf.maximum(mask_sum, 1)  # Normalize by the number of valid points, avoid division by zero
+    
+    # Return the mean loss across valid data points only
+    return loss_mean
 
 
 #############################################################################
