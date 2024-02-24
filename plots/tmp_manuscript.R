@@ -45,7 +45,7 @@ c("#114477","#77AADD",   "#AAAA44", "#77CCCC", "#771122",
 "#DD7788", "#52000D","#202020"
 )
 # (fill="#69b3a2", alpha=0.5)
-c("#69b3a2", )
+
 
 # https://colorbrewer2.org/#type=sequential&scheme=BuGn&n=5
 
@@ -518,3 +518,126 @@ DownSampling_linePlot_perModel_allElems(path_ass_DS, ass_type)
 
 # geom_errorbar( aes(ymin = len-sd, ymax = len+sd),width = 0.2)
 # https://r-graph-gallery.com/104-plot-lines-with-error-envelopes-ggplot2.html
+
+
+###################################################################################
+
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+
+if (.Platform$OS.type == "windows") {
+  # setwd('A:/myThesis/make_features/BMR/')
+  setwd("C:/Active/projects/make_features/BMR/")
+}
+# source('plots/functions.R')
+
+
+prepare_df_stat <- function(paths_eval_DS, statistic){ # statistic can be 'Mean' or 'Variance'
+  
+  df <- do.call(rbind, lapply(paths_eval_DS, fread))
+  
+  print(1)
+  
+  sample_size <- c()
+  model = c()
+  for (path_eval_DS in paths_eval_DS) {
+    M = extract_model_from_path(path_eval_DS)
+    model = c(model, M)
+    sample_size <- c(sample_size, extract_binSize_from_path(path_eval_DS))
+    
+  }
+  print(2)
+  
+  df_mean <- df[which(df$V1 == statistic),]
+  df_mean$model <- model
+  df_mean$sampleSize <- sample_size
+  df_mean <- data.frame(df_mean)
+  df_ass_mean <- df_mean[,c('V1', ass_type, "model", "sampleSize")]
+  df_ass_mean <- melt(df_ass_mean, id.vars = c(ass_type,  "model", "sampleSize"))
+  
+  df_ass_mean
+}
+
+prepare_data_DS_val <- function(paths_eval_DS, ass_type){
+  
+  
+  df_mean <- data.frame(prepare_df_stat(paths_eval_DS, 'Mean'))
+  df_var <- data.frame(prepare_df_stat(paths_eval_DS, 'Variance'))
+  
+  print(3)
+  
+  df_mean$M_minus_sd <- df_mean[,ass_type] - sd(df_var[,ass_type])
+  df_mean$M_plus_sd <- df_mean[,ass_type] + sd(df_var[,ass_type])
+  df_mean$assessment <- ass_type
+  df_mean$sampleSize <- factor(df_mean$sampleSize, levels = c("FullSet", "DS1M", 
+                                                              "DS800k", "DS600k", 
+                                                              "DS300k", "DS100k", 
+                                                              "DS50k"))
+  
+  print(4)
+  df_mean
+}
+
+
+DownSampling_eval <- function(paths_eval_DS, ass_type){
+  
+  df_mean <- prepare_data_DS_val(paths_eval_DS, ass_type)
+  
+  ggplot() +
+    geom_line(data = df_mean, aes(x = sampleSize, y = get(ass_type), color = model,
+                                  group = model)) +
+    # geom_point(data = df_mean, aes(x = sampleSize, y = corr, color = model), size = 3) +
+    geom_errorbar(data = df_mean, aes(x = sampleSize, ymin = M_minus_sd, ymax = M_plus_sd, 
+                                      color = model), width = 0.2) +
+    facet_wrap(~assessment, scales = "free_y") +
+    scale_color_manual(values = create_method_colours()) +
+    labs(x = "Model", y = ass_type, title = "Line Plot with Error Bars") +
+    theme_minimal() +
+    theme(axis.title.y = element_text(),
+          axis.text.y = element_blank(), 
+          axis.ticks.y = element_blank(),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(), 
+          axis.line = element_line(colour = "black"))  
+  
+}
+#######################################################
+
+
+paths_eval_DS = c('../external/BMR/output/with_RepliSeq_HiC/DownSampling/FullSet/GBM/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/FullSet/nn_poisLoss/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/FullSet/nn_mseLoss/model_metrics_summary.tsv',
+                  #'../external/BMR/output/with_RepliSeq_HiC/DownSampling/FullSet/RF/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS1M/GBM/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS1M/nn_poisLoss/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS1M/nn_mseLoss/model_metrics_summary.tsv',
+                  #'../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS1M/RF/model_metrics_summary.tsv', 
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS800k/GBM/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS800k/nn_poisLoss/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS800k/nn_mseLoss/model_metrics_summary.tsv',
+                  #'../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS800k/RF/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS600k/GBM/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS600k/nn_poisLoss/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS600k/nn_mseLoss/model_metrics_summary.tsv',
+                  #'../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS600k/RF/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS300k/GBM/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS300k/nn_poisLoss/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS300k/nn_mseLoss/model_metrics_summary.tsv',
+                  #'../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS300k/RF/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS100k/GBM/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS100k/nn_poisLoss/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS100k/nn_mseLoss/model_metrics_summary.tsv',
+                  #'../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS100k/RF/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS50k/GBM/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS50k/nn_poisLoss/model_metrics_summary.tsv',
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS50k/nn_mseLoss/model_metrics_summary.tsv'
+                  #'../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS50k/RF/model_metrics_summary.tsv',
+)
+
+
+
+ass_type = 'corr'
+DownSampling_eval(paths_eval_DS, ass_type)
