@@ -8,9 +8,6 @@ import ast
 import pickle
 import pandas as pd
 import numpy as np
-# from models.GLM_functions import GLM_model_info
-# from models.NN_functions import nn_model_info
-# from models.GBM_functions import gbm_model_info
 from readFtrs_Rspns import scale_train, scale_test, load_data
 from performance.assessModels import assess_model
 from models.repeated_train_test import save_metrics_summary
@@ -506,7 +503,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
         print(f'@@@@  model: {name}  @@@@')
         params = m['Args']
         save_path_model = f'{base_dir}/{name}/'
-        params['path_save'] = f'{save_path_model}rep_train_test/models/'
+        
         # check_file_func = m['check_file_func']
         # file_check = check_file_func(base_dir, name)
         # if not os.path.exists(file_check) or sim_setting['overwrite']:
@@ -514,6 +511,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
             write_readme_file(m, readme_file_name)
             
             for i in range(10):
+                params['path_save'] = f'{save_path_model}rep_train_test/models{i}/'
                 print(f'.......... repeat number {i+1} of train-test for evaluation of the {name} ......')
                 seed_value = np.random.seed(seed_values[i])
                 
