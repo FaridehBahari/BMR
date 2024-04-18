@@ -509,19 +509,19 @@ def predict_rankNN(model, feature_matrix, elem_length):
     elems = ["gc19_pc.cds", "enhancers", "gc19_pc.3utr", "gc19_pc.5utr",
               "gc19_pc.promCore", "gc19_pc.ss", "lncrna.ncrna", 
               "lncrna.promCore"]
-    if sum(feature_matrix.index.str.contains(r'[b]\d')) != 0:
+    if sum(feature_matrix.index.str.contains(r'[v]\d')) != 0:
         elems.append("intergenic")
     
     # Check if it is X_train or X_test
     # use_X_test = check_pattern_in_index(feature_matrix, elems)
-    use_X_test = (sum(feature_matrix.index.str.contains(r'[b]\d')) != feature_matrix.shape[0])
+    use_X_test = (sum(feature_matrix.index.str.contains(r'[v]\d')) != feature_matrix.shape[0])
     if use_X_test:
         predictions = pd.DataFrame()
         for elem in elems:
             print(elem)
             # split the X_test to element-types
             if elem == "intergenic":
-                test_elem = split_by_element(feature_matrix, r'[b]\d')
+                test_elem = split_by_element(feature_matrix, r'[v]\d')
             else:
                 test_elem = split_by_element(feature_matrix, elem)
             
@@ -540,8 +540,8 @@ def predict_rankNN(model, feature_matrix, elem_length):
                 pred_elem.append(pred_row)
             
             if NN_hyperparams['loss'] == 'mse':
-                pred_elem = np.exp(pred_elem)/N
-
+                pred_elem = np.exp(pred_elem)/N 
+                
             elif NN_hyperparams['loss'] == 'poisson':
                 pred_elem = pred_elem/N
             
@@ -573,8 +573,8 @@ def predict_rankNN(model, feature_matrix, elem_length):
            pred.append(pred_row)
            
        if NN_hyperparams['loss'] == 'mse':
-           pred = np.exp(pred)/N
-
+           pred = np.exp(pred)/N 
+           
        elif NN_hyperparams['loss'] == 'poisson':
            pred = pred/N
            
