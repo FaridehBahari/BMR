@@ -10,6 +10,7 @@ from models.GLM_functions import GLM_model_info
 from models.NN_functions import nn_model_info
 from models.GBM_functions import gbm_model_info
 from models.RF_functions import RF_model_info, RF_GPU_model_info
+from models.siamese import pair_rank_info_siamese2
 
 import configparser
 
