@@ -141,7 +141,7 @@ def build_model_architecture_siamese2(hyperparams, n_ftrs):
     
     if hyperparams['loss'] == 'mse':
         nr_outputs = 2**(n-1)
-
+        
     elif hyperparams['loss'] == 'poisson':
         nr_outputs = 2**(n)
     
@@ -249,7 +249,7 @@ def generate_outputs_pois(vector):
     n = len(vector)  # Number of columns
     rows = 2**(n)  # Number of rows
     ZO_matrix = np.zeros((rows, n), dtype=int)
-
+    
     for i in range(rows):
         binary = bin(i)[2:].zfill( n )
         for j in range ( n ):
@@ -259,8 +259,8 @@ def generate_outputs_pois(vector):
             
 
 def generate_siam_batch_samples(X_train, Y_train, batch_size, n_input, P_unique,
-                                loss_type): # loss_type can be mse or poisson
-
+                                loss_type): # loss_type can be mse or poisson 
+    
     indices = get_distinct_indices(X_train.shape[0], batch_size, n_input)
         
     if P_unique != 0.0:
@@ -328,7 +328,7 @@ def calculate_r1_pois(outputs):
     B = outputs[range(int(rows/2))]
     A = outputs[range(int(rows/2), rows)]
     r1 = A - B
-
+    
     r1 = np.mean(r1)
     return r1
 
@@ -372,8 +372,8 @@ def run_rankNN_iteration2(X_train, Y_train, NN_hyperparams):
                   'N': Y_train.N[0]
                   }
     # use the model for feature extraction
-    # sim_file = 'configs/rate_based/fb_sim_setting_elemSp.ini'
-
+    # sim_file = 'configs/rate_based/fb_sim_setting_elemSp.ini' 
+    
     # sim_setting = load_sim_settings(sim_file)
     # X_regLmnt, Y_regLmnt = load_regulatory_elems(sim_setting)
     
@@ -431,7 +431,6 @@ def run_rankNN_iteration2(X_train, Y_train, NN_hyperparams):
         
 #         # Calculate loss on validation set
 #         validation_loss, _ = model.evaluate(X_val, Y_val, verbose=0)  # assuming you have a single loss function
-
 #         if validation_loss > best_loss:
 #            patience_count += 1
 #            print(f'val_loss has not improved from {best_loss:.5f}. Patience counter: {patience_count}/{patience}')
@@ -484,7 +483,7 @@ def generate_siam_testDat(X_test, n_input, pred_type):
         all_indices = np.arange(X_test.shape[0])
         indices = np.tile(np.array([all_indices]).transpose(), (n_input))
         test_data = X_test.iloc[indices.flatten()].values.reshape(-1, n_input * X_test.shape[1])
-
+        
     return test_data
 
 # Function to check if elements exist in the feature matrix index
@@ -585,18 +584,43 @@ def predict_rankNN(model, feature_matrix, elem_length):
        
     return predictions
 
-
-def save_siamese(fitted_Model, path_save, save_name, save_model = True): 
+def save_nn(fitted_Model, path_save, save_name, iteration = None, save_model = True): 
+    
+    save_preds_tsv(fitted_Model, path_save, save_name, iteration)
+    
+    if save_model:
+        M = fitted_Model.model['model']
+        # Save the model 
+        if iteration is not None:
+            save_path_model = f'{path_save}/{save_name}/rep_train_test/{save_name}_model_{iteration}.h5'
+        else:
+            save_path_model = f'{path_save}/{save_name}/{save_name}_model.h5'
+            
+        M.save(save_path_model)
+        
+def save_siamese(fitted_Model, path_save, save_name, iteration = None, save_model = True): 
+    
+    save_preds_tsv(fitted_Model, path_save, save_name, iteration)
+    
     if save_model:
         model = fitted_Model.model['model']
         params = fitted_Model.model['NN_hyperparams']
-        model.save(f'{path_save+save_name}/{save_name}_model.h5')
+        
+        # Save the model 
+        if iteration is not None:
+            save_path_model = f'{path_save}/{save_name}/rep_train_test/{save_name}_model_{iteration}.h5'
+            save_path_param = f'{path_save}/{save_name}/rep_train_test/{save_name}_params_{iteration}.pkl'
+        else:
+            save_path_model = f'{path_save}/{save_name}/{save_name}_model.h5'
+            save_path_param = f'{path_save}/{save_name}/{save_name}_params.pkl'
+            
+        model.save(save_path_model)
             
     # Save the dictionary to a file using pickle
-        with open(f'{path_save+save_name}/{save_name}_params.pkl', 'wb') as f: 
+        with open(save_path_param, 'wb') as f: 
             pickle.dump(params, f)
         
-    save_preds_tsv(fitted_Model, path_save, save_name)
+    
     
 
 def pair_rank_info_siamese2(save_name, *args):
