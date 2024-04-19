@@ -132,7 +132,8 @@ def assess_models(sim_setting):
     base_dir = sim_setting['base_dir']
     Nr_pair_acc = sim_setting['Nr_pair_acc']
     
-    remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
+    # remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
+    remove_unMutated = True
     
     Y_obs_all_intergenic = read_obs(path_Y_train, remove_unMutated)
     Y_obs_all_elems = read_obs(path_Y_test, remove_unMutated)
