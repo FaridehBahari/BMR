@@ -40,9 +40,6 @@ def load_data_sim_2(sim_setting):
     # load all train 
     X_tr_cmplt, Y_tr_cmplt = load_data(path_X_train, path_Y_train)
     
-    # just include bins with length at least 100 for training
-    Y_tr_cmplt = Y_tr_cmplt.iloc[np.where(Y_tr_cmplt.length >= 100)]
-    X_tr_cmplt = X_tr_cmplt.loc[Y_tr_cmplt.index]
     
     # load all val 
     X_val_cmplt, Y_val_cmplt = load_data(path_X_val, path_Y_val)
@@ -222,10 +219,6 @@ def load_data_sim(sim_setting):
                                                                path_X_test, 
                                                                path_Y_test,
                                                                scale)
-    
-    # just include bins with length at least 100 for training
-    Y_train = Y_train.iloc[np.where(Y_train.length >= 100)]
-    X_train = X_train.loc[Y_train.index]
     
     
     columns_to_exclude = [col for col in new_ftrs if col in X_train.columns]
