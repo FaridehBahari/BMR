@@ -26,8 +26,12 @@ def read_pred(path_pred):
                          usecols=['binID', 'predRate'])
     return Y_pred
 
-def read_obs(path_Y, remove_unMut):
+def read_obs(path_Y, remove_unMut, train_response = False):
     Y = read_response(path_Y)
+    if train_response:
+        Y = Y.iloc[np.where(Y.length >= 100)]
+        
+    
     if remove_unMut:
         Y = Y[Y['nMut'] != 0]
     Y_obs = Y['obsRates']
@@ -135,8 +139,7 @@ def assess_models(sim_setting):
     # remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
     remove_unMutated = True
     
-    Y_obs_all_intergenic = read_obs(path_Y_train, remove_unMutated)
-    Y_obs_all_intergenic = Y_obs_all_intergenic.iloc[np.where(Y_obs_all_intergenic.length >= 100)]
+    Y_obs_all_intergenic = read_obs(path_Y_train, remove_unMutated, train_response = True)
     Y_obs_all_elems = read_obs(path_Y_test, remove_unMutated)
     
     acc_all = []
