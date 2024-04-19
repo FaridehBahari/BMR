@@ -136,6 +136,7 @@ def assess_models(sim_setting):
     remove_unMutated = True
     
     Y_obs_all_intergenic = read_obs(path_Y_train, remove_unMutated)
+    Y_obs_all_intergenic = Y_obs_all_intergenic.iloc[np.where(Y_obs_all_intergenic.length >= 100)]
     Y_obs_all_elems = read_obs(path_Y_test, remove_unMutated)
     
     acc_all = []
