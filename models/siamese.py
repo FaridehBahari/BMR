@@ -353,10 +353,19 @@ def run_rankNN_iteration2(X_train, Y_train, NN_hyperparams):
         last_saved_batch = np.load(lastBatch_npy)
         init_batch = last_saved_batch + 1
         last_saved_model = f'{save_path_interval}batch_{last_saved_batch}_model.h5'
-        # load the last model
-        with h5py.File(last_saved_model, 'r') as f:
+        n_batch = NN_hyperparams['epochs'] 
+        desired_model = f'{save_path_interval}batch_{n_batch}_model.h5'
+        if n_batch < last_saved_model:
+            
+            # load desired model
+            with h5py.File(desired_model, 'r') as f:
+                # load the model
+                model = load_model(f)
+        else:
+            # load the last model
+            with h5py.File(last_saved_model, 'r') as f:
             # load the model
-            model = load_model(f)
+                 model = load_model(f)
             
     if init_batch < NN_hyperparams['epochs']+1 or init_batch == NN_hyperparams['epochs']:
         
