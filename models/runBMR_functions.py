@@ -40,6 +40,10 @@ def load_data_sim_2(sim_setting):
     # load all train 
     X_tr_cmplt, Y_tr_cmplt = load_data(path_X_train, path_Y_train)
     
+    # just include bins with length at least 100 for training
+    Y_tr_cmplt = Y_tr_cmplt.iloc[np.where(Y_tr_cmplt.length >= 100)]
+    X_tr_cmplt = X_tr_cmplt.loc[Y_tr_cmplt.iloc]
+    
     # load all val 
     X_val_cmplt, Y_val_cmplt = load_data(path_X_val, path_Y_val)
     
@@ -218,6 +222,11 @@ def load_data_sim(sim_setting):
                                                                path_X_test, 
                                                                path_Y_test,
                                                                scale)
+    
+    # just include bins with length at least 100 for training
+    Y_train = Y_train.iloc[np.where(Y_train.length >= 100)]
+    X_train = X_train.loc[Y_train.iloc]
+    
     
     columns_to_exclude = [col for col in new_ftrs if col in X_train.columns]
     X_train = X_train.drop(columns=columns_to_exclude, errors='ignore') #
@@ -511,7 +520,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
             write_readme_file(m, readme_file_name)
             
             for i in range(10):
-                params['path_save'] = f'{save_path_model}rep_train_test/models{i}/'
+                params['path_save'] = f'{save_path_model}rep_train_test/models{i+1}/'
                 print(f'.......... repeat number {i+1} of train-test for evaluation of the {name} ......')
                 seed_value = np.random.seed(seed_values[i])
                 

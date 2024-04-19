@@ -153,7 +153,10 @@ def assess_models(sim_setting):
             
         path_pred_unseen = f'{base_dir}/{save_name}/{save_name}_predTest.tsv'
         Y_pred_unseen = read_pred(path_pred_unseen)
-        Y_obs_unseen = Y_obs_unseen.loc[Y_pred_unseen.index]
+        if Y_pred_unseen.shape[0] <= Y_obs_unseen.shape[0]:
+            Y_obs_unseen = Y_obs_unseen.loc[Y_pred_unseen.index]
+        elif Y_pred_unseen.shape[0] > Y_obs_unseen.shape[0]:
+            Y_pred_unseen = Y_pred_unseen.loc[Y_obs_unseen.index]
         
         if (Y_pred_unseen.index != Y_obs_unseen.index).all():
             raise ValueError('index mismatch')
@@ -164,8 +167,11 @@ def assess_models(sim_setting):
         
         path_pred_seen = f'{base_dir}/{save_name}/{save_name}_predTrain.tsv'
         Y_pred_seen = read_pred(path_pred_seen)
-        Y_obs_seen = Y_obs_seen.loc[Y_pred_seen.index]
         
+        if Y_pred_seen.shape[0] <= Y_obs_seen.shape[0]:
+            Y_obs_seen = Y_obs_seen.loc[Y_pred_seen.index]
+        elif Y_pred_seen.shape[0] > Y_obs_seen.shape[0]:
+            Y_pred_seen = Y_pred_seen.loc[Y_obs_seen.index]
         
         if (Y_pred_seen.index != Y_obs_seen.index).all():
             ValueError('index mismatch')
