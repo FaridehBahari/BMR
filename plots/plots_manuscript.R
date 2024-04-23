@@ -60,7 +60,7 @@ extract_model_from_path <- function(path){
 grouped_barPlot_model_elements <- function(path_ass_full, ass_type, compare,
                                            path_save = '../external/BMR/plots/',
                                            save_name = ''){
-  
+  dir.create(path_save, showWarnings = F, recursive = T)
   elements <- c('enhancers', 'gc19_pc.3utr', 'gc19_pc.5utr',
                 'gc19_pc.cds', 'gc19_pc.promCore',
                 'gc19_pc.ss', 'lncrna.ncrna', 'lncrna.promCore')
@@ -133,6 +133,9 @@ grouped_barPlot_model_elements <- function(path_ass_full, ass_type, compare,
 plot_validation_boxplot <- function(directory_paths, metric, compare,
                                     path_save = '../external/BMR/plots/',
                                     save_name = '') {
+  
+  dir.create(path_save, showWarnings = F, recursive = T)
+  
   all_data <- list()
   
   for (directory_path in directory_paths) {
@@ -198,6 +201,8 @@ plot_validation_boxplot <- function(directory_paths, metric, compare,
 DownSampling_linePlot_perModel_allElems <- function(path_ass_DS, ass_type,
                                                     path_save = '../external/BMR/plots/',
                                                     save_name = ''){
+  dir.create(path_save, showWarnings = F, recursive = T)
+  
   model <- extract_model_from_path(path_ass_DS[1])
   elements <- c('enhancers', 'gc19_pc.3utr', 'gc19_pc.5utr',
                 'gc19_pc.cds', 'gc19_pc.promCore',
@@ -322,6 +327,8 @@ DownSampling_eval <- function(paths_eval_DS, ass_type,
                               path_save = '../external/BMR/plots/',
                               save_name = ''){
   
+  dir.create(path_save, showWarnings = F, recursive = T)
+  
   df_mean <- prepare_data_DS_val(paths_eval_DS, ass_type)
   
   ggplot() +
@@ -365,6 +372,8 @@ extract_dimReducMethod_from_path <- function(path){
 grouped_barPlot_dimReduction <- function(path_ass_full, ass_type, 
                                          path_save = '../external/BMR/plots/',
                                          save_name = ''){
+  
+  dir.create(path_save, showWarnings = F, recursive = T)
   
   elements <- c('enhancers', 'gc19_pc.3utr', 'gc19_pc.5utr',
                 'gc19_pc.cds', 'gc19_pc.promCore',
@@ -452,6 +461,9 @@ extract_info_from_path <- function(directory_path) {
 grouped_boxplot_deimReduction <- function(directory_paths, metric, 
                                           path_save = '../external/BMR/plots/',
                                           save_name = '') {
+  
+  dir.create(path_save, showWarnings = F, recursive = T)
+  
   all_data <- list()
   
   for (directory_path in directory_paths) {
