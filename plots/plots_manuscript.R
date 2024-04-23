@@ -708,11 +708,10 @@ plot_validation_boxplot(binEffect_directory_paths, 'corr', 'per_binSize', save_n
 
 #####     fig5. bin size effect figures (fixed-window intervals) #####     
 
-path_ass_binSizes <- c('../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/1M/GBM/GBM_assessments.tsv',
-                       '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/100k/GBM/GBM_assessments.tsv',
-                       '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/50k/GBM/GBM_assessments.tsv',
+path_ass_binSizes <- c(#'../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/1M/GBM/GBM_assessments.tsv',
+                       # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/100k/GBM/GBM_assessments.tsv',
+                       # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/50k/GBM/GBM_assessments.tsv',
                        '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/10k/GBM/GBM_assessments.tsv'
-                       # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/1k/GBM/GBM_assessments.tsv'
 )
 
 save_name = 'splitted'
@@ -724,7 +723,6 @@ binEffect_directory_paths <- c('../external/BMR/output/with_RepliSeq_HiC/bin_siz
                                '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/100k/GBM/rep_train_test/',
                                # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/50k/GBM/rep_train_test/',
                                '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/10k/GBM/rep_train_test/'
-                               # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/1k/GBM/rep_train_test/'
 )
 
 plot_validation_boxplot(binEffect_directory_paths, 'corr', 'per_binSize', save_name = save_name) 
