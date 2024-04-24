@@ -708,10 +708,10 @@ plot_validation_boxplot(binEffect_directory_paths, 'corr', 'per_binSize', save_n
 
 #####     fig5. bin size effect figures (fixed-window intervals) #####     
 
-path_ass_binSizes <- c(#'../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/1M/GBM/GBM_assessments.tsv',
-                       # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/100k/GBM/GBM_assessments.tsv',
-                       # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/50k/GBM/GBM_assessments.tsv',
-                       '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/10k/GBM/GBM_assessments.tsv'
+path_ass_binSizes <- c(#'../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splited/1M/GBM/GBM_assessments.tsv',
+                       # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splited/100k/GBM/GBM_assessments.tsv',
+                       # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splited/50k/GBM/GBM_assessments.tsv',
+                       '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splited/10k/GBM/GBM_assessments.tsv'
 )
 
 save_name = 'splitted'
@@ -719,15 +719,121 @@ ass_type <- 'corr'
 grouped_barPlot_model_elements(path_ass_binSizes, ass_type, 'per_binSize', save_name = save_name)
 
 
-binEffect_directory_paths <- c('../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/1M/GBM/rep_train_test/',
-                               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/100k/GBM/rep_train_test/',
-                               # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/50k/GBM/rep_train_test/',
-                               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/10k/GBM/rep_train_test/'
+binEffect_directory_paths <- c('../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splited/1M/GBM/rep_train_test/',
+                               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splited/100k/GBM/rep_train_test/',
+                               # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splited/50k/GBM/rep_train_test/',
+                               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splited/10k/GBM/rep_train_test/'
 )
 
 plot_validation_boxplot(binEffect_directory_paths, 'corr', 'per_binSize', save_name = save_name) 
 
 
+#################################################################
+#length distribution
 
+library(ggplot2)
+library(gridExtra)
+
+# Read the data
+
+y <- fread('../external/BMR/rawInput/responseTabs/Pan_Cancer/var_bins.tsv')
+elem_length1 <- y$length
+
+y <- fread('../external/BMR/rawInput/responseTabs_bedtools/Pan_Cancer/var_bins.tsv')
+elem_length2 <- y$length
+
+y <- fread('../external/BMR/rawInput/responseTabs/Pan_Cancer/reg_elems.tsv')
+elem_length3 <- y$length
+
+y <- fread('../../BMR_proj/external/rawInput/Pan_Cancer_train_y.tsv')
+elem_length4 <- y$length
+
+# Combine all element lengths into a single vector
+all_elem_lengths <- c(elem_length1, elem_length2, elem_length3, elem_length4)
+
+# Determine the maximum value among all element lengths
+max_length <- max(all_elem_lengths)
+
+
+# Create violin plots for each vector separately
+plot1 <- ggplot(data = NULL, aes(x = "", y = elem_length1)) +
+  geom_violin(fill = "skyblue", color = "black") +
+  labs(title = "", x = "non-PCAWG callable variable bins", y = "") +
+  scale_y_log10(limits = c(1, max_length))+
+  theme_minimal()
+
+plot2 <- ggplot(data = NULL, aes(x = "", y = elem_length2)) +
+  geom_violin(fill = "skyblue", color = "black") +
+  labs(title = "", x = "Full set variable bins", y = "") +
+  scale_y_log10(limits = c(1, max_length))+
+  theme_minimal()
+
+plot3 <- ggplot(data = NULL, aes(x = "", y = elem_length3)) +
+  geom_violin(fill = "skyblue", color = "black") +
+  labs(title = "", x = "PCAWG elements", y = "Length") +
+  scale_y_log10(limits = c(1, max_length))+
+  theme_minimal()
+
+plot4 <- ggplot(data = NULL, aes(x = "", y = elem_length4)) +
+  geom_violin(fill = "skyblue", color = "black") +
+  labs(title = "", x = "DP intergenic bins", y = "") +
+  scale_y_log10(limits = c(1, max_length))+
+  theme_minimal()
+
+# Arrange the plots in a grid
+grid.arrange(plot3, plot1, plot2, plot4, ncol = 4)
+
+#######################################################
+
+# Read the data
+
+library(ggplot2)
+
+# Read the data and extract element lengths with non-zero nMut values
+y1 <- fread('../external/BMR/rawInput/responseTabs/Pan_Cancer/var_bins.tsv')
+elem_length1 <- y1$length[which(y1$nMut != 0)]
+
+y2 <- fread('../external/BMR/rawInput/responseTabs_bedtools/Pan_Cancer/var_bins.tsv')
+elem_length2 <- y2$length[which(y2$nMut != 0)]
+
+y3 <- fread('../external/BMR/rawInput/responseTabs/Pan_Cancer/reg_elems.tsv')
+elem_length3 <- y3$length[which(y3$nMut != 0)]
+
+y4 <- fread('../../BMR_proj/external/rawInput/Pan_Cancer_train_y.tsv')
+elem_length4 <- y4$length[which(y4$nMut != 0)]
+
+# Combine all element lengths into a single vector
+all_elem_lengths <- c(elem_length1, elem_length2, elem_length3, elem_length4)
+
+# Determine the maximum value among all element lengths
+max_length <- max(all_elem_lengths)
+
+# Create violin plots for each vector separately, setting the same y-axis limits
+plot1 <- ggplot(data = NULL, aes(x = "", y = elem_length1)) +
+  geom_violin(fill = "#FFDAB9", color = "black") +
+  labs(title = "", x = "non-PCAWG callable variable bins", y = "") +
+  scale_y_log10(limits = c(1, max_length)) +  # Set y-axis limits
+  theme_minimal()
+
+plot2 <- ggplot(data = NULL, aes(x = "", y = elem_length2)) +
+  geom_violin(fill = "#FFDAB9", color = "black") +
+  labs(title = "", x = "Full set variable bins", y = "") +
+  scale_y_log10(limits = c(1, max_length)) +  # Set y-axis limits
+  theme_minimal()
+
+plot3 <- ggplot(data = NULL, aes(x = "", y = elem_length3)) +
+  geom_violin(fill = "#FFDAB9", color = "black") +
+  labs(title = "", x = "PCAWG elements", y = "Length") +
+  scale_y_log10(limits = c(1, max_length)) +  # Set y-axis limits
+  theme_minimal()
+
+plot4 <- ggplot(data = NULL, aes(x = "", y = elem_length4)) +
+  geom_violin(fill = "#FFDAB9", color = "black") +
+  labs(title = "", x = "DP intergenic bins", y = "") +
+  scale_y_log10(limits = c(1, max_length)) +  # Set y-axis limits
+  theme_minimal()
+
+# Arrange the plots in a grid
+grid.arrange(plot3, plot1, plot2, plot4, ncol = 4)
 
 
