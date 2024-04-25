@@ -7,7 +7,7 @@ Created on Tue Jul  4 18:23:03 2023
 import numpy as np
 import os
 import logging
-from scipy.stats import binom_test, nbinom
+from scipy.stats import binom_test, nbinom #DeprecationWarning: 'binom_test' is deprecated in favour of 'binomtest' from version 1.7.0 and will be removed in Scipy 1.12.0.
 from sklearn.utils import resample
 import statsmodels as sm
 import sys
@@ -125,10 +125,28 @@ def find_param_ini(directory_path):
             break
     return second_ini
 
+
+def get_pred_path(directory_path, save_name):
+    # Construct the base filename
+    base_filename = f"{directory_path}/{save_name}_predTest.tsv"
+    
+    # If the base filename doesn't exist, return it directly
+    if not os.path.exists(base_filename):
+        count = 1
+        while True:
+            base_filename = f"{directory_path}/{save_name}_{count}_predTest.tsv"
+            if os.path.exists(base_filename):
+                return base_filename
+            count += 1
+    else:
+        return base_filename
+
+
 def perform_burdenTest(dir_path):
     setting_config = 'sim_setting.ini'
     param_config = find_param_ini(dir_path)
     
+    print(param_config)
     
     sim_setting = load_sim_settings_perBatchPerf(dir_path, setting_config,
                                                  param_config)
@@ -137,8 +155,10 @@ def perform_burdenTest(dir_path):
     # predict_func = sim_params['predict_func']
     base_dir = sim_setting['base_dir']
     directory_path = f'{base_dir}/{save_name}/'
+    
     path_obs = sim_setting['path_Y_test']
-    path_pred = f'{directory_path}/{save_name}_predTest.tsv'
+    path_pred = get_pred_path(directory_path, save_name)
+    print(path_pred)
     
     Y_obs = read_response(path_obs)
     Y_pred = read_pred(path_pred)
@@ -171,6 +191,8 @@ def perform_burdenTest(dir_path):
     print('****************')
     
     
+
+
 def perform_burdenTest2(path_pred, path_Y_regLmnts):
     
     Y_pred = pd.read_csv(path_pred, sep=',', header=0, index_col='binID')
@@ -209,19 +231,17 @@ def perform_burdenTest2(path_pred, path_Y_regLmnts):
 
 
 
-dir_path =  '../external/output/GBM/'
-perform_burdenTest(dir_path)
 
+dir_paths =  ['../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/',
+               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/RF/',
+               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_poisLoss/',
+               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_mseLoss_softplus/',
+               '../external/BMR/output/TL/GBM/'
+              ]
 
-# dir_paths =  ['../external/output/small_BatchSize/500_50fiveLayers_do3_bs64/',
-#               # '../external/output/GBM/',
-#               # '../external/output/GLM/',
-#               # '../external/output/RF/'
-#               ]
+for dir_path in dir_paths:
+    perform_burdenTest(dir_path)
 
-# for dir_path in dir_paths:
-#     perform_burdenTest(dir_path)
-
-path_Y_regLmnts = '../external/rawInput/Pan_Cancer_test_y.tsv'
-path_pred = '../external/output/GBM_transferLearning/GBM/GBM_ensemble_bootstraps25_preds.tsv'
-perform_burdenTest2(path_pred, path_Y_regLmnts)
+# path_Y_regLmnts = '../external/rawInput/Pan_Cancer_test_y.tsv'
+# path_pred = '../external/output/GBM_transferLearning/GBM/GBM_ensemble_bootstraps25_preds.tsv'
+# perform_burdenTest2(path_pred, path_Y_regLmnts)
