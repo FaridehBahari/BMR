@@ -7,16 +7,13 @@ Created on Tue Jul  4 16:13:00 2023
 import pandas as pd
 import sys
 import os
-import ast
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 sys.path.append('models/')
 from readFtrs_Rspns import read_response
 from scipy.stats import spearmanr
 import numpy as np
 from sklearn.metrics import mean_squared_error
-from simulation_settings import load_sim_settings_perBatchPerf
-from models.runBMR_functions import load_data
-import h5py
+
 
 from tensorflow.keras.models import load_model
 

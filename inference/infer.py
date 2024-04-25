@@ -116,9 +116,18 @@ def bh_fdr(pvals):
     return multipletests(pvals, method='fdr_bh')[1]
 
 ##############################################
+
+def find_param_ini(directory_path):
+    second_ini = None
+    for filename in os.listdir(directory_path):
+        if filename.endswith('.ini') and filename != 'sim_setting.ini':
+            second_ini = filename
+            break
+    return second_ini
+
 def perform_burdenTest(dir_path):
     setting_config = 'sim_setting.ini'
-    param_config = 'dev.ini'
+    param_config = find_param_ini(dir_path)
     
     
     sim_setting = load_sim_settings_perBatchPerf(dir_path, setting_config,
