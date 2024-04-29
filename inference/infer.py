@@ -232,11 +232,13 @@ def perform_burdenTest2(path_pred, path_Y_regLmnts):
 
 
 
-dir_paths =  ['../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/',
-               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/RF/',
-               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_poisLoss/',
-               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_mseLoss_softplus/',
-               '../external/BMR/output/TL/GBM/'
+dir_paths =  [
+    # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/',
+    #            '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/RF/',
+    #            '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_poisLoss/',
+               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/siamese_cpu/',
+               '../external/BMR/output/TL/GBM/',
+               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_mseLoss/'
               ]
 
 for dir_path in dir_paths:
