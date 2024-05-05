@@ -151,9 +151,9 @@ def create_TestTrain_SingleSource(path_X, path_Y, test_size, scale = True,
 def create_TestTrain_TwoSources(path_X_train, path_Y_train, path_X_test,
                                 path_Y_test, scale = True, use_features = None):
     
-    X_train, Y_train = load_data(path_X_train, path_Y_train)
+    X_train, Y_train = load_data(path_X_train, path_Y_train, use_features)
     
-    X_test, Y_test = load_data(path_X_test, path_Y_test)
+    X_test, Y_test = load_data(path_X_test, path_Y_test, use_features)
     
     # reorder test columns based on train columns
     X_test = X_test[X_train.columns]

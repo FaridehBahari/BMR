@@ -462,7 +462,7 @@ def sample_train_val_fixedSize(Y_train, Y_val, bed_tr, bed_var, seed_value, val_
 
 
 def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt,
-            make_pred = True, overwrite = True):
+            make_pred = True, overwrite = True, n_repeat = 10):
     
     
     fixed_size_train = ast.literal_eval(sim_setting['fixed_size_train'])
@@ -512,7 +512,7 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
         if not os.path.exists(readme_file_name) or overwrite:
             write_readme_file(m, readme_file_name)
             
-            for i in range(10):
+            for i in range(n_repeat):
                 params['path_save'] = f'{save_path_model}rep_train_test/models{i+1}/'
                 print(f'.......... repeat number {i+1} of train-test for evaluation of the {name} ......')
                 seed_value = np.random.seed(seed_values[i])
@@ -567,6 +567,126 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
 
 
 
+def get_features_category(category, path_featureURLs = '../external/database/all_feature_URLs.xlsx'):
+    
+    # Load feature groups from Excel file
+    feature_groups_df = pd.read_excel(path_featureURLs)  
+    feature_groups = feature_groups_df.groupby('Group Name')['Feature Name'].apply(list).to_dict()
+    nucleotide_content = ['ACA', 'ACC', 'ACG', 'ACT', 'ATA', 'ATC', 'ATG', 'ATT',
+                          'CCA', 'CCC', 'CCG', 'CCT', 'CTA', 'CTC', 'CTG', 'CTT', 
+                          'GCA', 'GCC', 'GCG', 'GCT', 'GTA', 'GTC', 'GTG', 'GTT', 
+                          'TCA', 'TCC', 'TCG', 'TCT', 'TTA', 'TTC', 'TTG', 'TTT', 
+                          'TA5p', 'TC5p', 'TG5p', 'TT5p', 'CA5p', 'CC5p', 'CG5p', 
+                          'CT5p', 'AT3p', 'CT3p', 'GT3p', 'AC3p', 'GC3p', 'TC3p']
+    
+    
+    # Adding 'nucleotide content'and 'APOBEC' key to the dictionary
+    feature_groups['nucleotide content'] = nucleotide_content
+    feature_groups['APOBEC'] = ['APOBEC3A']
+    
+    return feature_groups[category]
+
+
+
+def load_data_FI(sim_setting, category):
+    
+    ftrs = get_features_category(category)
+    
+    path_X_test = sim_setting['path_X_test']
+    path_X_train = sim_setting['path_X_train']
+    path_Y_test = sim_setting['path_Y_test']
+    path_Y_train = sim_setting['path_Y_train']
+    scale = ast.literal_eval(sim_setting['scale'])
+    DSmpl = ast.literal_eval(sim_setting['DSmpl'])
+    n_sample = sim_setting['n_sample']
+    remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
+    
+    
+    X_train, Y_train, X_test, Y_test = create_TestTrain_TwoSources(path_X_train, 
+                                                               path_Y_train, 
+                                                               path_X_test, 
+                                                               path_Y_test,
+                                                               scale, use_features = ftrs)
+    
+    
+    X_train = X_train.loc[:, ftrs]
+    
+    X_test = X_test.loc[:, ftrs]
+    
+    if remove_unMutated:
+        Y_train = Y_train[Y_train['nMut'] != 0]
+        X_train = X_train.loc[Y_train.index]
+        
+        Y_test = Y_test[Y_test['nMut'] != 0]
+        X_test = X_test.loc[Y_test.index]
+    
+    if DSmpl:
+        
+        np.random.seed(40)
+        tr_indices = np.random.choice(list(Y_train.index), size=n_sample, replace=False)
+        Y_train = Y_train.loc[tr_indices]
+        print(f'Down sampling was performed... number of training bins: {Y_train.shape[0]}')
+        X_train = X_train.loc[Y_train.index]
+    
+    if (Y_test.index != X_test.index).all():
+        raise ValueError('X_test and Y_test indexes are not the same')
+    if (Y_train.index != X_train.index).all():
+        raise ValueError('X_train and Y_train indexes are not the same')
+        
+    return X_train, Y_train, X_test, Y_test
+
+
+def load_data_FI_2(sim_setting, category):
+    
+    path_X_train = sim_setting['path_X_train']
+    path_X_val = sim_setting['path_X_validate']
+    new_ftrs = get_features_category(category)
+    
+    path_Y_train = sim_setting['path_Y_train']
+    path_Y_val = sim_setting['path_Y_validate']
+    
+    scale = ast.literal_eval(sim_setting['scale'])
+    
+    DSmpl = ast.literal_eval(sim_setting['DSmpl'])
+    n_sample = sim_setting['n_sample']
+    remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
+    
+    # load all train 
+    X_tr_cmplt, Y_tr_cmplt = load_data(path_X_train, path_Y_train, use_features=new_ftrs)
+    
+    
+    # load all val 
+    X_val_cmplt, Y_val_cmplt = load_data(path_X_val, path_Y_val, use_features=new_ftrs)
+    
+    
+    if scale:
+        X_tr_cmplt, meanSc, sdSc = scale_train(X_tr_cmplt)
+        X_val_cmplt = scale_test(X_val_cmplt, meanSc, sdSc)
+    
+    
+    
+    if remove_unMutated:
+        Y_tr_cmplt = Y_tr_cmplt[Y_tr_cmplt['nMut'] != 0]
+        X_tr_cmplt = X_tr_cmplt.loc[Y_tr_cmplt.index]
+        
+        Y_val_cmplt = Y_val_cmplt[Y_val_cmplt['nMut'] != 0]
+        X_val_cmplt = X_val_cmplt.loc[Y_val_cmplt.index]
+    
+    
+    if DSmpl:
+        np.random.seed(0)
+        tr_indices = np.random.choice(list(Y_tr_cmplt.index), size=n_sample, replace=False)
+        Y_tr_cmplt = Y_tr_cmplt.loc[tr_indices]
+        print(f'Down sampling was performed... number of training bins: {Y_tr_cmplt.shape[0]}')
+        X_tr_cmplt = X_tr_cmplt.loc[Y_tr_cmplt.index]
+    
+    
+    if (Y_val_cmplt.index != X_val_cmplt.index).all():
+        raise ValueError('X_val and Y_val indexes are not the same')
+    if (X_tr_cmplt.index != Y_tr_cmplt.index).all():
+        raise ValueError('X_train and Y_train indexes are not the same')
+        
+    return X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt
 
 
 
