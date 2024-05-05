@@ -28,9 +28,13 @@ sim_setting = load_sim_settings(sim_file)
 config_save(sim_file)
 
 ##########################
+# 'DNA_accessibility', 'DNA_methylation', 'Epigenetic_mark', 'HiC',
+# 'RNA_expression', 'Replication_timing', 'conservation', 'nucleotide content', 'APOBEC'
+feature_category = 'HiC'
+#############################
 print('repeated train and test for model evaluation is starting ...')
 end_t = time.time()
-X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt = load_data_FI_2(sim_setting, 'nucleotide content')
+X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt = load_data_FI_2(sim_setting, feature_category)
 
 print(X_tr_cmplt.shape)
 print(X_val_cmplt.shape)
@@ -38,7 +42,7 @@ repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmp
 end_t2 = time.time()
 
 #################################################
-X_train, Y_train, X_test, Y_test = load_data_FI(sim_setting, 'nucleotide content')
+X_train, Y_train, X_test, Y_test = load_data_FI(sim_setting, feature_category)
 RUN_BMR(sim_setting, X_train, Y_train, X_test, Y_test, make_pred=True)
 assess_models(sim_setting)
 print('************ Job Done *************')

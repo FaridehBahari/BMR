@@ -569,22 +569,38 @@ def repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val
 
 def get_features_category(category, path_featureURLs = '../external/database/all_feature_URLs.xlsx'):
     
-    # Load feature groups from Excel file
-    feature_groups_df = pd.read_excel(path_featureURLs)  
-    feature_groups = feature_groups_df.groupby('Group Name')['Feature Name'].apply(list).to_dict()
-    nucleotide_content = ['ACA', 'ACC', 'ACG', 'ACT', 'ATA', 'ATC', 'ATG', 'ATT',
-                          'CCA', 'CCC', 'CCG', 'CCT', 'CTA', 'CTC', 'CTG', 'CTT', 
-                          'GCA', 'GCC', 'GCG', 'GCT', 'GTA', 'GTC', 'GTG', 'GTT', 
-                          'TCA', 'TCC', 'TCG', 'TCT', 'TTA', 'TTC', 'TTG', 'TTT', 
-                          'TA5p', 'TC5p', 'TG5p', 'TT5p', 'CA5p', 'CC5p', 'CG5p', 
-                          'CT5p', 'AT3p', 'CT3p', 'GT3p', 'AC3p', 'GC3p', 'TC3p']
+    # # Load feature groups from Excel file
+    # feature_groups_df = pd.read_excel(path_featureURLs)  
+    # feature_groups = feature_groups_df.groupby('Group Name')['Feature Name'].apply(list).to_dict()
+    # nucleotide_content = ['ACA', 'ACC', 'ACG', 'ACT', 'ATA', 'ATC', 'ATG', 'ATT',
+    #                       'CCA', 'CCC', 'CCG', 'CCT', 'CTA', 'CTC', 'CTG', 'CTT', 
+    #                       'GCA', 'GCC', 'GCG', 'GCT', 'GTA', 'GTC', 'GTG', 'GTT', 
+    #                       'TCA', 'TCC', 'TCG', 'TCT', 'TTA', 'TTC', 'TTG', 'TTT', 
+    #                       'TA5p', 'TC5p', 'TG5p', 'TT5p', 'CA5p', 'CC5p', 'CG5p', 
+    #                       'CT5p', 'AT3p', 'CT3p', 'GT3p', 'AC3p', 'GC3p', 'TC3p']
     
     
-    # Adding 'nucleotide content'and 'APOBEC' key to the dictionary
-    feature_groups['nucleotide content'] = nucleotide_content
-    feature_groups['APOBEC'] = ['APOBEC3A']
+    # # Adding 'nucleotide content'and 'APOBEC' key to the dictionary
+    # feature_groups['nucleotide content'] = nucleotide_content
+    # feature_groups['APOBEC'] = ['APOBEC3A']
+    
+    
+    
+    # # # File path from where to load the dictionary
+    # # file_path = '../external/procInput/ftrs_dict.pickle'
+
+    # # # Save the dictionary to disk
+    # # with open(file_path, 'wb') as file:
+    # #     pickle.dump(feature_groups, file)
+    
+    
+    # Load the dictionary from disk
+    with open('../external/procInput/ftrs_dict.pickle', 'rb') as file:
+        feature_groups = pickle.load(file)
+
     
     return feature_groups[category]
+
 
 
 
