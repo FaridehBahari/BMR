@@ -40,17 +40,17 @@ X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting)
 n_dim = 148
 params = {'activation_encoded': 'relu',
           'activation_decoded': 'relu',
-          'activation_bottleneck': 'identity',
+          'activation_bottleneck': 'linear',
           'loss': 'mse',
           'optimizer': 'adam',
-          'epochs': 2000,
+          'epochs': 100,
           'batch_size': 512}
 
 # Train the autoencoder and get the history
 encoder, history, ae_model = train_autoencoder_model(n_dim, X_train, params)
 
 # save the plot and reduced test and train Xs
-path_save = '../external/procInput/AEreduced_bs512_2000Ep_dim148/'
+path_save = '../external/procInput/AE/'
 os.makedirs(path_save, exist_ok= True)
 
 ae_model.save(f'{path_save}_model.h5')
