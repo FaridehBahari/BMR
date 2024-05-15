@@ -43,14 +43,14 @@ params = {'activation_encoded': 'relu',
           'activation_bottleneck': 'linear',
           'loss': 'mse',
           'optimizer': 'adam',
-          'epochs': 100,
+          'epochs': 2000,
           'batch_size': 512}
 
 # Train the autoencoder and get the history
 encoder, history, ae_model = train_autoencoder_model(n_dim, X_train, params)
 
 # save the plot and reduced test and train Xs
-path_save = '../external/procInput/AE/'
+path_save = '../external/BMR/procInput/dimReduction/AE/'
 os.makedirs(path_save, exist_ok= True)
 
 ae_model.save(f'{path_save}_model.h5')
