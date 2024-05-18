@@ -127,10 +127,10 @@ def RUN_pairRank(sim_setting,  X_train, Y_train, X_test, Y_test, overwrite = Tru
 
 
 
-def config_save(sim_file):
+def config_save(sim_file, change_dir_save = ''):
     sim_setting = load_sim_settings(sim_file)
     base_dir = sim_setting['base_dir']
-    
+    base_dir = f'{base_dir}{change_dir_save}/'
     sim_config = configparser.ConfigParser()
     sim_config.read(sim_file)
     for model_name in sim_config['models']:
@@ -393,8 +393,6 @@ def load_data_sim(sim_setting, category = ['DNA_accessibility', 'Epigenetic_mark
                     'RNA_expression', 'Replication_timing', 'conservation',
                     'nucleotide content']):
     
-    ftrs = get_features_category(category)
-    
     path_X_test = sim_setting['path_X_test']
     path_X_train = sim_setting['path_X_train']
     path_Y_test = sim_setting['path_Y_test']
@@ -404,16 +402,23 @@ def load_data_sim(sim_setting, category = ['DNA_accessibility', 'Epigenetic_mark
     n_sample = sim_setting['n_sample']
     remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
     
-    X_train, Y_train, X_test, Y_test = create_TestTrain_TwoSources(path_X_train, 
-                                                               path_Y_train, 
-                                                               path_X_test, 
-                                                               path_Y_test,
-                                                               scale, use_features = ftrs)
+    if len(category != 0):
+        ftrs = get_features_category(category)
+        
+        X_train, Y_train, X_test, Y_test = create_TestTrain_TwoSources(path_X_train, 
+                                                                   path_Y_train, 
+                                                                   path_X_test, 
+                                                                   path_Y_test,
+                                                                   scale, use_features = ftrs)
+        X_train = X_train.loc[:, ftrs]
+        X_test = X_test.loc[:, ftrs]
     
-    
-    X_train = X_train.loc[:, ftrs]
-    
-    X_test = X_test.loc[:, ftrs]
+    else:
+        X_train, Y_train, X_test, Y_test = create_TestTrain_TwoSources(path_X_train, 
+                                                                   path_Y_train, 
+                                                                   path_X_test, 
+                                                                   path_Y_test,
+                                                                   scale)
     
         
     if remove_unMutated:
@@ -446,7 +451,7 @@ def load_data_sim_2(sim_setting, category = ['DNA_accessibility', 'Epigenetic_ma
     path_X_train = sim_setting['path_X_train']
     path_X_val = sim_setting['path_X_validate']
     
-    ftrs = get_features_category(category)
+    
     
     path_Y_train = sim_setting['path_Y_train']
     path_Y_val = sim_setting['path_Y_validate']
@@ -457,15 +462,22 @@ def load_data_sim_2(sim_setting, category = ['DNA_accessibility', 'Epigenetic_ma
     n_sample = sim_setting['n_sample']
     remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
     
-    # load all train 
-    X_tr_cmplt, Y_tr_cmplt = load_data(path_X_train, path_Y_train,
-                                       use_features=ftrs)
-    
-    
-    # load all val 
-    X_val_cmplt, Y_val_cmplt = load_data(path_X_val, path_Y_val,
-                                         use_features=ftrs)
+    if len(category != 0):
+        # load all train 
+        ftrs = get_features_category(category)
+        X_tr_cmplt, Y_tr_cmplt = load_data(path_X_train, path_Y_train,
+                                           use_features=ftrs)
         
+        
+        # load all val 
+        X_val_cmplt, Y_val_cmplt = load_data(path_X_val, path_Y_val,
+                                             use_features=ftrs)
+    else:
+        # load all train 
+        X_tr_cmplt, Y_tr_cmplt = load_data(path_X_train, path_Y_train)        
+        
+        # load all val 
+        X_val_cmplt, Y_val_cmplt = load_data(path_X_val, path_Y_val)
        
     if scale:
         X_tr_cmplt, meanSc, sdSc = scale_train(X_tr_cmplt)
