@@ -402,7 +402,7 @@ def load_data_sim(sim_setting, category = ['DNA_accessibility', 'Epigenetic_mark
     n_sample = sim_setting['n_sample']
     remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
     
-    if len(category != 0):
+    if len(category) != 0:
         ftrs = get_features_category(category)
         
         X_train, Y_train, X_test, Y_test = create_TestTrain_TwoSources(path_X_train, 
@@ -462,7 +462,7 @@ def load_data_sim_2(sim_setting, category = ['DNA_accessibility', 'Epigenetic_ma
     n_sample = sim_setting['n_sample']
     remove_unMutated = ast.literal_eval(sim_setting['remove_unMutated'])
     
-    if len(category != 0):
+    if len(category) != 0:
         # load all train 
         ftrs = get_features_category(category)
         X_tr_cmplt, Y_tr_cmplt = load_data(path_X_train, path_Y_train,
