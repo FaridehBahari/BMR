@@ -58,7 +58,9 @@ def build_model_architecture(hyperparams, n_ftrs):
 
     inputs = Input(shape=(n_ftrs,))
     x = inputs  # Initialize x with inputs
-
+    
+    x = Dropout(0.2)(x)
+    
     if hyperparams['architecture'] == [0]:
         x = Dense(1, activation=hyperparams['activation_out'])(x)
     else:
