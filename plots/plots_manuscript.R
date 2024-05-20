@@ -7,6 +7,9 @@ library(dplyr)
 library(ggplot2)
 library(reshape2)
 library(gridExtra)
+library(tidyverse)
+
+setwd('C:/Active/projects/make_features/BMR/')
 
 create_method_colours <- function() {
   c(GBM = '#daa520', GBM0 = '#f2dca5', 
@@ -361,7 +364,7 @@ DownSampling_linePlot_perModel_allElems <- function(path_ass_DS, ass_type,
                      #,
                      # 'lncrna.ncrna' = 'lncRNA',
                      # 'lncrna.promCore' = 'lncRNA Promoter'
-                     )
+  )
   
   elements <- names(element_names)
   
@@ -928,6 +931,93 @@ histogram_perElement_length <- function(path_responseTab_PCAWG,
 }
 
 
+# Function to read .tsv files and extract 'corr' column
+read_corr_from_tsv <- function(directory) {
+  tsv_file <- file.path(directory, "model_metrics_summary.tsv")
+  if (file.exists(tsv_file)) {
+    data <- data.frame(fread(tsv_file))
+    corr <- data$corr
+    # print(length(corr)) 
+    return(corr)
+  } else {
+    warning(paste("No file found in directory:", directory))
+    return(NULL)
+  }
+}
+
+
+
+importance_plot <- function(parent_directory, path_GBM, LOO = FALSE,
+                            path_save = '../external/BMR/plots/',
+                            save_name = ''){
+  
+  # List all subdirectories
+  subdirectories <- list.dirs(parent_directory, recursive = FALSE)
+  
+  # Read corr values from each subdirectory
+  
+  df <- data.frame()
+  for (directory in subdirectories) {
+    metric = read_corr_from_tsv(directory)
+    df <- rbind(df, (metric))
+  }
+  colnames(df) <- c('Mean', 'variance')
+  
+  corr_data <- df$Mean
+  
+  # Create a data frame with subdirectory names and corr values
+  plot_data <- data.frame(`Feature Group` = sub("GBM_", "", basename(subdirectories)),
+                          Correlation = corr_data)
+  plot_data$Feature.Group = sapply(plot_data$Feature.Group, function(x) paste0(toupper(substring(x, 1, 1)), substring(x, 2)))
+  plot_data <- plot_data[which(!plot_data$Feature.Group %in% c('DNA_methylation', 'APOBEC')),]
+  plot_data$Feature.Group <- gsub('_', " ", plot_data$Feature.Group)
+  
+  full_corr_gbm <- fread(path_GBM)$corr[1]
+  
+  if (LOO) {
+    
+    plot_data$Correlation <- full_corr_gbm - plot_data$Correlation
+    y_axis <- 'Difference of correlation'
+  } else {
+    y_axis <- 'Correlation'
+  }
+  
+  plot_data$Feature.Group <- factor(plot_data$Feature.Group, 
+                                    levels = plot_data$Feature.Group[order(-plot_data$Correlation)])
+  
+  # Plot using ggplot2
+  p <- ggplot(plot_data, aes(x = Feature.Group, y = Correlation, fill = Feature.Group)) +
+    geom_bar(stat = "identity") +
+    labs(y = "Correlation", fill = NULL) +
+    scale_fill_manual(values = c(`Epigenetic mark` = '#1b9e77',
+                                  `RNA expression` = '#d95f02',
+                                  `Replication timing`= '#7570b3',
+                                  HiC = '#e7298a',
+                                  `DNA accessibility` = '#66a61e',
+                                  `NucleotideContext` = '#e6ab02',
+                                 Conservation = '#a6761d')) +
+    
+    #c('#081d58','#253494','#225ea8','#1d91c0','#41b6c4','#c7e9b4','#edf8b1') 
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          text = element_text(size = 14),
+          panel.grid = element_blank(), 
+          axis.line = element_line(colour = "black"),
+          legend.title = element_blank()) +
+    xlab("")
+  
+  if (!LOO) {
+    p <- p + geom_hline(yintercept = full_corr_gbm, linetype = "dashed", linewidth = 1.3)
+  }
+  
+  ggsave(paste0("FeatureImportance", save_name,".png"),
+         plot = p, device = "png", width = 10, 
+         bg = 'white',
+         path = path_save)
+  
+}
+
+
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #####     fig1: Compare different models on variable-size intergenic bins####
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -1182,7 +1272,7 @@ for (ass_type in ass_types) {
   } else {
     grouped_barPlot_model_elements_MSE(path_ass_binSizes, 'per_binSize', save_name = save_name)
   }
- 
+  
 }
 
 
@@ -1218,12 +1308,22 @@ for (coding_nonCoding in coding_nonCodings) {
 path_responseTab_PCAWG <- '../external/BMR/rawInput/responseTabs/Pan_Cancer/reg_elems.tsv'
 histogram_perElement_length(path_responseTab_PCAWG)
 
+######################## feature importance plots ############################
 
+parent_directory <- "../external/BMR/output/featureImportance/"
+path_GBM <- '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/model_metrics_summary.tsv'
+importance_plot(parent_directory, path_GBM)
+
+
+
+parent_directory <- "../external/BMR/output/featureImportance_LOO/"
+path_GBM <- '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/model_metrics_summary.tsv'
+importance_plot(parent_directory, path_GBM = path_GBM, save_name = 'LOO', LOO = T)
+############################################################################
 
 # elementSp vs TL
 
 
-  
 
 
 
@@ -1447,3 +1547,71 @@ grid.arrange(plot3, plot1, ncol = 2)
 #                ncol = 2)
 # }
 # 
+
+
+# Load necessary libraries
+library(ggplot2)
+library(reshape2)
+
+# Your data
+data <- data.frame(
+  Element = c("lncrna.ncrna", "lncrna.promCore", "gc19_pc.ss", "enhancers", "gc19_pc.cds", "gc19_pc.promCore", "gc19_pc.5utr", "gc19_pc.3utr"),
+  Ratio = c(0.8030734636896665, 0.6287743442778786, 0.2988726618976751, 0.5485366783685965, 0.6551608689501593, 0.6339806785697778, 0.3374977825852253, 0.6047107207493484,
+            0.4685042593494515, 0.2802511309420116, 0.7783057631595223, 0.5532080267569323, 0.3803545917843505, 0.4845719063059615, 0.7607092444284935, 0.5178973122878467,
+            0.8395220670591235, 0.648191657968322, 0.3570648648928321, 0.5063690916847651, 0.7241949462797541, 0.623272801289832, 0.3418936567919746, 0.6262748972663467,
+            0.7036465906981347, 0.49817102987443995, 0.8542001855971655, 0.6285330456499335, 0.682057440661196, 0.7497892902441917, 0.8417247397451391, 0.6535073110879858,
+            0.9472286800869942, 0.8809027605832732, 0.9191374533271238, 0.9137284342594494, 0.8916824121964794, 0.8881900581257646, 0.9261607895366636, 0.9059664874794969,
+            0.7727922566719677, 0.5898240983728147, 0.5142062218301741, 0.5860233680938737, 0.7173929786744792, 0.566321736071273, 0.5678976000557882, 0.6678578377194958,
+            0.38139557954689574, 0.16584506287594716, 0.33894087398252604, 0.1731014177445291, 0.1544577900050936, 0.15563884122730207, 0.3235945016598348, 0.17792215622915933),
+  Group = rep(c("HiC", "nucleotideContext", "Replication_timing", "DNA_accessibility", "Epigenetic_mark", "RNA_expression", "conservation"), each = 8)
+)
+
+data$Element <- factor(heatmap_data$Element, levels = c("lncrna.ncrna", "lncrna.promCore", 
+                                                        "gc19_pc.ss", "enhancers", "gc19_pc.cds",
+                                                        "gc19_pc.promCore", "gc19_pc.5utr", 
+                                                        "gc19_pc.3utr"))
+
+
+
+
+
+library(RColorBrewer)
+
+# Plot the heatmap
+ggplot(data, aes(x = Group, y = Element, fill = Ratio)) +
+  geom_tile() +
+  geom_text(aes(label = round(Ratio, 2)), color = "black", size = 3) +  # Add text labels
+  scale_fill_gradient(low =  "darkblue", high = "#D53E4F", 
+                      breaks = c(.1, .2,  .4, .6,  .8, .9),
+                      labels = brewer.pal(6, "Spectral"),
+                      limits = c(0, 1),
+                      # na.value = "grey50",
+                      guide = "colorbar")  +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Heatmap of Ratios", x = "Group", y = "Element")
+
+
+
+
+colnames(data) <- c("Element type", "Importance per feature category \n (mean correlation ratio)",   "Feature Category" )
+
+# Plot the heatmap
+ggplot(data, aes(x = `Feature Category`, y = `Element type`, fill = `Importance per feature category \n (mean correlation ratio)`)) +
+  geom_tile(color = "black") +
+  geom_text(aes(label = round(`Importance per feature category \n (mean correlation ratio)`, 2)), 
+            color = "black", size = 3.5)  +  # Add text labels
+  scale_fill_gradientn(colors = c( 'black', "#43589F", '#7393B3', "#3288BD", "#66C2A5", "#ABDDA4", 
+                                   "#E6F598", "#FDAE61", "#D53E4F",
+                                   "#9E0142"),# rev(brewer.pal(6, "Spectral")),
+                       breaks = c(0, .1, .2,  0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
+                       labels = c(0, .1, .2,  0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
+                       limits = c(0, 1),
+                       na.value = "grey50",
+                       guide = "colorbar") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 14),) +
+  labs(x = "Feature Category", y = "Element type")
+
+# "#5E4FA2" "#3288BD" "#66C2A5" "#ABDDA4" "#E6F598" "#FFFFBF" "#FEE08B" "#FDAE61" "#F46D43" "#D53E4F" "#9E0142"

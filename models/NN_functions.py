@@ -6,6 +6,7 @@ from readFtrs_Rspns import set_gpu_memory_limit
 import h5py
 import time  
 import tensorflow as tf
+from tensorflow.keras import layers
 from tensorflow.keras.layers import Activation, Dense, Dropout, LeakyReLU, BatchNormalization, PReLU, Input, Add
 from tensorflow.keras.models import Sequential, load_model, Model
 from tensorflow.keras.losses import Poisson
@@ -45,54 +46,6 @@ def build_NN_params(config_file):
     return param
 
 
-# def build_model_architecture(hyperparams, n_ftrs):
-    
-#     optimizer = hyperparams['optimizer']
-#     learning_rate = hyperparams['learning_rate']
-#     if optimizer == 'adam':
-#         opt = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-#     elif optimizer == 'sgd':
-#         opt = tf.keras.optimizers.SGD(learning_rate=learning_rate)
-
-#     inputs = Input(shape=(n_ftrs,))
-#     x = inputs  # Initialize x with inputs
-
-#     if hyperparams['architecture'] == [0]:
-#         x = Dense(1, activation=hyperparams['activation_out'])(x)
-#     else:
-#         for i, units in enumerate(hyperparams['architecture']):
-#             if i == 0:
-#                 if hyperparams['activation1'] == 'leaky_relu':
-#                     x = Dense(units, activation=LeakyReLU(alpha=0.2))(x)
-#                 elif hyperparams['activation1'] == 'PReLU':
-#                     x = Dense(units, activation=PReLU())(x)
-#                 else:
-#                     x = Dense(units, activation=hyperparams['activation1'])(x)
-#             else:
-#                 residual_connection = x  # Store the current output for the residual connection
-
-#                 if hyperparams['res_connection']:
-#                     # Implement the residual connection by adding the residual_connection
-#                     x = Add()([x, residual_connection])
-
-#                 if hyperparams['activation1'] == 'leaky_relu':
-#                     x = Dense(units, activation=LeakyReLU(alpha=0.2))(x)
-#                 elif hyperparams['activation1'] == 'PReLU':
-#                     x = Dense(units, activation=PReLU())(x)
-#                 else:
-#                     x = Dense(units, activation=hyperparams['activation1'])(x)
-
-#             x = BatchNormalization()(x)
-
-#             if hyperparams['dropout'] != 0:
-#                 x = Dropout(hyperparams['dropout'])(x)
-
-#         x = Dense(1, activation=hyperparams['activation_out'])(x)
-
-#     model = Model(inputs=inputs, outputs=x)
-#     model.compile(loss=hyperparams['loss'], optimizer=opt)
-
-#     return model
    
 def build_model_architecture(hyperparams, n_ftrs):
     
@@ -110,37 +63,25 @@ def build_model_architecture(hyperparams, n_ftrs):
         x = Dense(1, activation=hyperparams['activation_out'])(x)
     else:
         for i, units in enumerate(hyperparams['architecture']):
-            print(i)
-            if i == 0:
-                x = Dense(units)(x)
-                x = BatchNormalization()(x)
-                
-                if hyperparams['activation1'] == 'leaky_relu':
-                    x = LeakyReLU(alpha=0.2)(x)
-                elif hyperparams['activation1'] == 'PReLU':
-                    x = PReLU()(x)
-                else:
-                    
-                    x = Activation(hyperparams['activation1'])(x)
+            tmp_input = x  # Store the current output for the residual connection
+
+            x = Dense(units)(x)
+            x = BatchNormalization()(x)                
+
+            if hyperparams['activation1'] == 'leaky_relu':
+                x = LeakyReLU(alpha=0.2)(x)
+            elif hyperparams['activation1'] == 'PReLU':
+                x = PReLU()(x)
             else:
-                residual_connection = x  # Store the current output for the residual connection
-                x = BatchNormalization()(x)
-                x = Dense(units)(x)
-
-                if hyperparams['res_connection']:
-                    # Implement the residual connection by adding the residual_connection
-                    x = Add()([x, residual_connection])
-
-                if hyperparams['activation1'] == 'leaky_relu':
-                    x = LeakyReLU(alpha=0.2)(x)
-                elif hyperparams['activation1'] == 'PReLU':
-                    x = PReLU()(x)
-                else:
-                    x = Activation(hyperparams['activation1'])(x)
-
+                x = Activation(hyperparams['activation1'])(x)
 
             if hyperparams['dropout'] != 0:
                 x = Dropout(hyperparams['dropout'])(x)
+
+            if hyperparams['res_connection']:
+                # Implement the residual connection by adding the residual_connection
+                residual = layers.Dense(units, activation=None)(tmp_input) 
+                x = Add()([x, residual])
 
         x = Dense(1, activation=hyperparams['activation_out'])(x)
 
@@ -257,108 +198,6 @@ def run_NN(X_train, Y_train, NN_hyperparams):
     return model_data
 
 
-# # not complete...returns error and need preventing overwriting saved models
-# def run_NN(X_train, Y_train, NN_hyperparams):
-    
-#     path = NN_hyperparams['path_save']
-
-#     # Split the path by '/'
-#     parts = path.split('/')
-
-#     # Extract the desired portion
-#     if len(parts) >= 2:
-#         extracted_path = '/'.join(parts[:-2]) + '/'
-#     else:
-#         extracted_path = ''
-
-#     model_name = parts[-3]
-#     path_to_save = f'{extracted_path}model_plots'
-#     os.makedirs(path_to_save, exist_ok= True)
-        
-#     if NN_hyperparams['response'] == "rate":
-#         Y_tr = (Y_train['nMut']) / (Y_train['length'])
-#     elif NN_hyperparams['response'] == "count":
-#         Y_tr = Y_train['nMut']
-#     else:
-#         raise ValueError("error")  # Use "raise" to raise an exception
-
-#     X_train, X_val, Y_tr, Y_val = train_test_split(X_train, Y_tr, 
-#                                                    test_size=0.2, 
-#                                                    random_state= 42)
-
-#     n_ftrs = int(X_train.shape[1])
-    
-#     # Define a callback to save the model after each epoch
-#     checkpoint = ModelCheckpoint(
-#         filepath=os.path.join(NN_hyperparams['path_save'], f'batch_{epoch}_model.h5'),
-#         save_best_only=False,  # Set to True if you want to save only the best model
-#         save_weights_only=False,  # Set to True if you want to save only the model weights
-#         monitor='val_loss',  # You can choose a metric to monitor, e.g., 'val_loss'
-#         mode='auto',  # Auto mode for monitoring
-#         save_freq=NN_hyperparams['save_interval']  # Save the model after each epoch
-#     )
-    
-#     os.makedirs(path, exist_ok= True)
-#     last_batch_number = get_last_batch_number(path)
-#     save_path_interval = NN_hyperparams['path_save']
-#     if last_batch_number == 0:
-#         # Build initial model
-#         model = build_model_architecture(NN_hyperparams, n_ftrs)
-#         print(model.summary())
-#         remaining_epochs = NN_hyperparams['epochs']
-        
-#     elif last_batch_number < NN_hyperparams['epochs']:
-#         last_saved_model = f'{save_path_interval}batch_{last_batch_number}_model.h5'
-#         # load the last model
-#         with h5py.File(last_saved_model, 'r') as f:
-#             # load the model
-#             model = load_model(f)
-            
-#         remaining_epochs = NN_hyperparams['epochs'] - last_batch_number
-#     elif last_batch_number >= NN_hyperparams['epochs']:
-#         n_epochs = NN_hyperparams['epochs']
-#         print(f'model was trained for {n_epochs}')
-    
-    
-#     # ann_viz(model, filename= f'{path_to_save}/model_architecture',
-#     #         title='My first neural network')
-    
-#     # Add the checkpoint callback to the list of callbacks
-#     callbacks_list = [checkpoint]
-
-#     history = model.fit(X_train, Y_tr, validation_data=(X_val, Y_val),
-#               epochs=remaining_epochs,
-#               batch_size=NN_hyperparams['batch_size'], verbose=1,
-#               callbacks=callbacks_list)  # Pass the callbacks list to the fit method
-   
-#     # Create a dictionary with the training and validation loss
-#     loss_data = {
-#     'epoch': list(range(1, len(history.history['loss']) + 1)),
-#     'train_loss': history.history['loss'],
-#     'val_loss': history.history['val_loss']
-#     }
-    
-#     # Create a DataFrame from the dictionary
-#     loss_df = pd.DataFrame(loss_data)
-#     loss_df.to_csv(f'{path_to_save}/{model_name}_train_val_loss_df.tsv', sep = '\t')
-    
-    
-#     plt.plot(np.log(history.history['loss']))
-#     plt.plot(np.log(history.history['val_loss']))
-#     plt.title(f'{model_name}model loss')
-#     plt.ylabel('log loss')
-#     plt.xlabel('epoch')
-#     plt.legend(['train', 'val'], loc='upper left')
-    
-#     #plt.show()
-#     plt.savefig(f'{path_to_save}/{model_name}_train_val_loss_plot')
-#     plt.close()
-    
-#     model_data = {'model': model,
-#                   'N': Y_train.N[0],
-#                   'response_type': NN_hyperparams['response']}
-
-#     return model_data
 
    
 
