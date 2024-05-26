@@ -604,7 +604,8 @@ def repeated_train_test3(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_va
                                                                   bed_val, seed_value, val_size)
                     
                 else: 
-                    Y_train, Y_test = sample_validations3(Y_tr_cmplt, val_size, seed_value)
+                    Y_train, Y_test = sample_validations3(Y_tr_cmplt, Y_val_cmplt, 
+                                                          val_size, seed_value)
                     
                 X_train = X_tr_cmplt.loc[Y_train.index]
                 X_test = X_val_cmplt.loc[Y_test.index]
