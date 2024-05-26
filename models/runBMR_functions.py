@@ -536,7 +536,7 @@ def repeated_train_test3(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_va
     if(length_filter):
         
         Y_tr_cmplt = Y_tr_cmplt.iloc[np.where(Y_tr_cmplt.length > length_filter)]
-        X_tr_cmplt = X_tr_cmplt[Y_tr_cmplt.index]
+        X_tr_cmplt = X_tr_cmplt.loc[Y_tr_cmplt.index]
     
     fixed_size_train = ast.literal_eval(sim_setting['fixed_size_train'])
     path_train_info = sim_setting['path_train_info']
