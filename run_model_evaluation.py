@@ -3,7 +3,7 @@ import os
 import platform
 import argparse
 from readFtrs_Rspns import set_gpu_memory_limit
-from models.runBMR_functions import  config_save, load_data_sim_2, repeated_train_test
+from models.runBMR_functions import  config_save, load_data_sim_2, repeated_train_test3
 from simulation_settings import load_sim_settings
 
 
@@ -31,11 +31,11 @@ config_save(sim_file)
 print('repeated train and test for model evaluation is starting ...')
 end_t = time.time()
 X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt = load_data_sim_2(sim_setting)
-X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt = load_data_sim_2(sim_setting, category = [])
+#X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt = load_data_sim_2(sim_setting, category = [])
 
 print(X_tr_cmplt.shape)
 print(X_val_cmplt.shape)
-repeated_train_test(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt)
+repeated_train_test3(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt)
 
 end_t2 = time.time()
 

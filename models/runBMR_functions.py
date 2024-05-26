@@ -508,18 +508,252 @@ def load_data_sim_2(sim_setting, category = ['DNA_accessibility', 'Epigenetic_ma
         
     return X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt
 
+###############################################################################
+# this section was used for assessing mutation status and length it can be replaced with the previous ones if the results are the same
+
+def sample_validations3(Y_train, Y_val, val_size, seed_value):
+    
+    Y_val = Y_val.iloc[np.where(Y_val.length >= 20)]
+    Y_val = Y_val.iloc[np.where(Y_val.nMut != 0)]
+    
+    # sample from variable-size bins to have validation set
+    np.random.seed(seed_value)
+    val_indices = np.random.choice(Y_val.index, 
+                                    size=val_size, replace=False)
+    Y_val = Y_val.loc[val_indices]
+    
+    # remove validation bins from train set
+    filtered_train_Y = Y_train.loc[~Y_train.index.isin(val_indices)]
+    
+    return filtered_train_Y, Y_val
 
 
-# seed_value = 7
-# val_size = 5000
 
 
-# path_bed_val = '../external/database/bins/proccessed/callable_intergenic_intervals_wo_pcawg.bed6'
-# bed_tr = pd.read_csv(path_bed_tr, sep = '\t', header = None)
+def repeated_train_test3(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt,
+            make_pred = True, overwrite = True, n_repeat = 10):
+    
+    
+    fixed_size_train = ast.literal_eval(sim_setting['fixed_size_train'])
+    path_train_info = sim_setting['path_train_info']
+    path_bed_tr = sim_setting['path_bed_tr']
+    path_bed_var = sim_setting['path_bed_var']
+    
+    models = sim_setting['models']
+    base_dir = sim_setting['base_dir']
+    
+    val_size = X_tr_cmplt.shape[0]//5 
+    Nr_pair_acc = sim_setting['Nr_pair_acc']
+    
+    if path_train_info != '':
+        '----- using trainInfo ----'
+        train_info = pd.read_csv(path_train_info, sep = '\t', index_col='binID')
+        train_info = train_info.loc[Y_tr_cmplt.index]
+    elif fixed_size_train:
+        '------ using pybedtools -----'
+        bed_tr = pd.read_csv(path_bed_tr, sep = '\t', header = None)
+        bed_tr['binID'] = bed_tr[3]
+        bed_tr = bed_tr.set_index('binID')
+        bed_tr = bed_tr.loc[Y_tr_cmplt.index]
+        
+        bed_val = pd.read_csv(path_bed_var, sep = '\t', header = None)
+        bed_val['binID'] = bed_val[3]
+        bed_val = bed_val.set_index('binID')
+        bed_val = bed_val.loc[Y_val_cmplt.index]
+        
+    seed_values = [1, 5, 14, 10, 20, 30, 40, 50, 60, 70, 80, 90, 77, 100, 110]
+    
+    
+    for key in models:
+       
+        m = models[key]
+        name = m['save_name']
+        
+        os.makedirs(f'{base_dir}/{name}/', exist_ok= True)
+        readme_file_name = f'{base_dir}/{name}/README.md'
+        print(f'@@@@  model: {name}  @@@@')
+        params = m['Args']
+        save_path_model = f'{base_dir}/{name}/'
+        
+        # check_file_func = m['check_file_func']
+        # file_check = check_file_func(base_dir, name)
+        # if not os.path.exists(file_check) or sim_setting['overwrite']:
+        if not os.path.exists(readme_file_name) or overwrite:
+            write_readme_file(m, readme_file_name)
+            
+            for i in range(n_repeat):
+                params['path_save'] = f'{save_path_model}rep_train_test/models{i+1}/'
+                print(f'.......... repeat number {i+1} of train-test for evaluation of the {name} ......')
+                seed_value = np.random.seed(seed_values[i])
+                
+                if os.path.exists(f'{save_path_model}/rep_train_test/{name}_M{i+1}_assessment.tsv'):
+                    print(f"Skipping iteration {i+1} as the file already exists.")
+                    continue
+                
+                if path_train_info != '':
+                    '----- using trainInfo ----'
+                    Y_train, Y_test = sample_train_valvar(Y_val_cmplt, Y_tr_cmplt, 
+                                                train_info, val_size, seed_value)
+                elif fixed_size_train: 
+                    '------ using pybedtools -----'
+                    Y_train, Y_test = sample_train_val_fixedSize(Y_tr_cmplt, Y_val_cmplt, bed_tr,
+                                                                  bed_val, seed_value, val_size)
+                    
+                else: 
+                    Y_train, Y_test = sample_validations3(Y_tr_cmplt, val_size, seed_value)
+                    
+                X_train = X_tr_cmplt.loc[Y_train.index]
+                X_test = X_val_cmplt.loc[Y_test.index]
+                
+                print(X_train.shape)
+                print(X_test.shape)
+                
+                common_indices = X_test.index.intersection(X_train.index)
+                
+                if not common_indices.empty:
+                    raise ValueError(f"Common indices found between X_test and X_train:{common_indices}")
+                else:
+                    print("No common indices found between X_test and X_train.")
+                    
+                fitted_Model = fit_model(X_train, Y_train, X_test, Y_test,
+                                         m['run_func'], m['predict_func'], make_pred, m['Args'])
+                save_func = m['save_func']
+                itr = i+1
+                                
+                save_func(fitted_Model, base_dir, name, iteration=itr, save_model=True)
+                
+                Y_pred = fitted_Model.predRates_test
+                Y_obs = Y_test.nMut/(Y_test.N * Y_test.length)
+                assessments = assess_model(Y_pred, Y_obs, Nr_pair_acc, name, per_element=False)
+                
+                path_assessments = f'{save_path_model}/rep_train_test/{name}_M{i+1}_assessment.tsv'
+                assessments.to_csv(path_assessments, sep='\t')
+        
+        print("=============================")
+        dir_path = f'{save_path_model}/rep_train_test/'
+        save_metrics_summary(dir_path)
+        
 
 
-# path_bed_tr = '../external/database/bins/proccessed_bedtools/callable_50k_intergenic_bins.bed12'
-# bed_val = pd.read_csv(path_bed_val, sep = '\t', index_col = 3, header = None)
+#########################################################################
+# the following functions were used for running repeated train and test on fixed-size elements 
+# for NNs. where pybedtools was not installed on cancer_gpu and the pyb env was not able to handle 
+# GPU memory
+
+def extract_bin_size(path_bed_tr):
+    
+    if path_bed_tr == '../external/database/bins/proccessed/intergenic_fixed1M.bed6':
+        bin_size = '1M'
+    elif path_bed_tr == '../external/database/bins/proccessed/intergenic_fixed100k.bed6':
+        bin_size = '100k'
+    elif path_bed_tr == '../external/database/bins/proccessed/intergenic_fixed50k.bed6':
+        bin_size = '50k'
+    elif path_bed_tr == '../external/database/bins/proccessed/intergenic_fixed10k.bed6':
+        bin_size = '10k'
+        
+    return bin_size
 
 
+def sample_train_val_fixedSize2(Y_train, Y_val, bed_tr, bed_var, 
+                               path_bed_tr, iteration):
+    
+    bin_size = extract_bin_size(path_bed_tr)
+    saved_file = f'../external/BMR/procInput/fixedSize_trainValIDs/fixed{bin_size}_IDs.pkl'
+    
+    with open(saved_file, 'rb') as f:
+         results = pickle.load(f)
+    
+    val_set_binIDs = results[f'{bin_size}_{iteration}']['val_set_binIDs']
+    non_train_set_binIDs = results[f'{bin_size}_{iteration}']['non_train_set_binIDs']
+    
+    Y_train = Y_train[~Y_train.index.isin(non_train_set_binIDs) ]
+    Y_val = Y_val.loc[val_set_binIDs]
+    
+    return Y_train, Y_val
+
+
+
+def repeated_train_test2(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt,
+            make_pred = True, overwrite = True, n_repeat = 10):
+    
+    
+    path_bed_tr = sim_setting['path_bed_tr']
+    path_bed_var = sim_setting['path_bed_var']
+    
+    models = sim_setting['models']
+    base_dir = sim_setting['base_dir']
+    
+    Nr_pair_acc = sim_setting['Nr_pair_acc']
+    
+    bed_tr = pd.read_csv(path_bed_tr, sep = '\t', header = None)
+    bed_tr['binID'] = bed_tr[3]
+    bed_tr = bed_tr.set_index('binID')
+    bed_tr = bed_tr.loc[Y_tr_cmplt.index]
+    
+    bed_val = pd.read_csv(path_bed_var, sep = '\t', header = None)
+    bed_val['binID'] = bed_val[3]
+    bed_val = bed_val.set_index('binID')
+    bed_val = bed_val.loc[Y_val_cmplt.index]
+     
+    for key in models:
+       
+        m = models[key]
+        name = m['save_name']
+        
+        os.makedirs(f'{base_dir}/{name}/', exist_ok= True)
+        readme_file_name = f'{base_dir}/{name}/README.md'
+        print(f'@@@@  model: {name}  @@@@')
+        params = m['Args']
+        save_path_model = f'{base_dir}/{name}/'
+        
+        # check_file_func = m['check_file_func']
+        # file_check = check_file_func(base_dir, name)
+        # if not os.path.exists(file_check) or sim_setting['overwrite']:
+        if not os.path.exists(readme_file_name) or overwrite:
+            write_readme_file(m, readme_file_name)
+            
+            for i in range(n_repeat):
+                params['path_save'] = f'{save_path_model}rep_train_test/models{i+1}/'
+                print(f'.......... repeat number {i+1} of train-test for evaluation of the {name} ......')
+                                
+                if os.path.exists(f'{save_path_model}/rep_train_test/{name}_M{i+1}_assessment.tsv'):
+                    print(f"Skipping iteration {i+1} as the file already exists.")
+                    continue
+                
+                Y_train, Y_test = sample_train_val_fixedSize2(Y_tr_cmplt, Y_val_cmplt,
+                                                              bed_tr, bed_val,
+                                                              path_bed_tr, i)
+                
+                print('===========')
+                
+                X_train = X_tr_cmplt.loc[Y_train.index]
+                X_test = X_val_cmplt.loc[Y_test.index]
+                
+                print(X_train.shape)
+                print(X_test.shape)
+                
+                common_indices = X_test.index.intersection(X_train.index)
+                
+                if not common_indices.empty:
+                    raise ValueError(f"Common indices found between X_test and X_train:{common_indices}")
+                else:
+                    print("No common indices found between X_test and X_train.")
+                    
+                fitted_Model = fit_model(X_train, Y_train, X_test, Y_test,
+                                         m['run_func'], m['predict_func'], make_pred, m['Args'])
+                save_func = m['save_func']
+                itr = i+1
+                                
+                save_func(fitted_Model, base_dir, name, iteration=itr, save_model=True)
+                
+                Y_pred = fitted_Model.predRates_test
+                Y_obs = Y_test.nMut/(Y_test.N * Y_test.length)
+                assessments = assess_model(Y_pred, Y_obs, Nr_pair_acc, name, per_element=False)
+                
+                path_assessments = f'{save_path_model}/rep_train_test/{name}_M{i+1}_assessment.tsv'
+                assessments.to_csv(path_assessments, sep='\t')
+        
+        print("=============================")
+        dir_path = f'{save_path_model}/rep_train_test/'
+        save_metrics_summary(dir_path)
 
