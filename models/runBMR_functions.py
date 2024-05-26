@@ -531,8 +531,12 @@ def sample_validations3(Y_train, Y_val, val_size, seed_value):
 
 
 def repeated_train_test3(sim_setting,  X_tr_cmplt, Y_tr_cmplt, X_val_cmplt, Y_val_cmplt,
-            make_pred = True, overwrite = True, n_repeat = 10):
+            make_pred = True, overwrite = True, n_repeat = 10, length_filter = None):
     
+    if(length_filter):
+        
+        Y_tr_cmplt = Y_tr_cmplt.iloc[np.where(Y_tr_cmplt.length > length_filter)]
+        X_tr_cmplt = X_tr_cmplt[Y_tr_cmplt.index]
     
     fixed_size_train = ast.literal_eval(sim_setting['fixed_size_train'])
     path_train_info = sim_setting['path_train_info']
