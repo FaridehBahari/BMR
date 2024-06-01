@@ -62,7 +62,7 @@ plt.gca().invert_yaxis()  # Invert y-axis to have the highest importance at the 
 # Format legend labels
 def format_legend_label(label):
     label = label.replace('_', ' ').title()
-    label = label.replace('Dna', 'DNA').replace('Rna', 'RNA')
+    label = label.replace('Dna', 'DNA').replace('Rna', 'RNA').replace('Hic', 'HiC')
     return label
 
 # Create a legend for the colors

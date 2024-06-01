@@ -59,7 +59,7 @@ def build_model_architecture(hyperparams, n_ftrs):
     inputs = Input(shape=(n_ftrs,))
     x = inputs  # Initialize x with inputs
     
-    x = Dropout(0.2)(x)
+    # x = Dropout(0.2)(x)
     
     if hyperparams['architecture'] == [0]:
         x = Dense(1, activation=hyperparams['activation_out'])(x)
@@ -81,8 +81,12 @@ def build_model_architecture(hyperparams, n_ftrs):
                 x = Dropout(hyperparams['dropout'])(x)
 
             if hyperparams['res_connection']:
-                # Implement the residual connection by adding the residual_connection
-                residual = layers.Dense(units, activation=None)(tmp_input) 
+                
+                if(tmp_input.shape[1] == units):
+                    residual = tmp_input
+                else:
+                    residual = layers.Dense(units, activation=None)(tmp_input) 
+                
                 x = Add()([x, residual])
 
         x = Dense(1, activation=hyperparams['activation_out'])(x)

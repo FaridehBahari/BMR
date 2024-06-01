@@ -205,6 +205,19 @@ all_gbm_cds <- comp_pRes[["GBM"]][["CDS"]]
 gbm_cds <- all_gbm_cds[which(all_gbm_cds$fdr < .05),]
 all_TL_cds <- comp_pRes[['eMET']][['CDS']]
 TL_cds <- all_TL_cds[which(all_TL_cds$fdr < .05),]
+
+dir.create('../../make_features/external/BMR/tables/', showWarnings = F, recursive = T)
+fwrite(gbm_cds, file = '../../make_features/external/BMR/tables/sigHits_XGBoost.tsv', sep = '\t')
+ann <- ann_PCAWG_ID_complement[,c("PCAWG_IDs", "type_of_element", "in_CGC",
+                                  "in_CGC_literature", "in_CGC_new", "in_oncoKB",
+                                  "in_pcawg", "tissues")]
+
+TL_cds <- left_join(TL_cds, ann, by = 'PCAWG_IDs')
+eMET_table <- TL_cds[, c("PCAWG_IDs", "p_value", "fdr", "is_TP", "type_of_element", "in_CGC",
+"in_CGC_literature", "in_CGC_new", "in_oncoKB", "in_pcawg")]
+fwrite(eMET_table, file = '../../make_features/external/BMR/tables/sigHits_eMET.tsv',
+       sep = '\t')
+
 which(!TL_cds$PCAWG_IDs %in% gbm_cds$PCAWG_IDs)
 
 # 41 59 63 65 66 69 70 73 76
@@ -346,6 +359,15 @@ gbm_nc <- all_gbm_nc[which(all_gbm_nc$fdr < .05),]
 
 all_eMET_nc <- comp_pRes[['eMET']][['non_coding']]
 eMET_nc <- all_eMET_nc[which(all_eMET_nc$fdr < .05),]
+eMET_nc <- left_join(eMET_nc, ann, by = 'PCAWG_IDs')
+eMET_table_nc <- eMET_nc[, c("PCAWG_IDs", "p_value", "fdr", "is_TP", "type_of_element", "in_CGC",
+                         "in_CGC_literature", "in_CGC_new", "in_oncoKB", "in_pcawg")]
+fwrite(eMET_table_nc, file = '../../make_features/external/BMR/tables/nc_sigHits_eMET.tsv',
+       sep = '\t')
+
+
+
+
 which(!eMET_nc$PCAWG_IDs %in% gbm_nc$PCAWG_IDs)
 
 eMET_nc_nonTRUE <- eMET_nc[which(!eMET_nc$is_TP),]
