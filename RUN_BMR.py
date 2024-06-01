@@ -3,7 +3,7 @@ import os
 import platform
 import argparse
 from readFtrs_Rspns import set_gpu_memory_limit
-from models.runBMR_functions import  RUN_BMR, load_data_sim, config_save, load_data_sim_2, repeated_train_test
+from models.runBMR_functions import  RUN_BMR, load_data_sim, config_save, repeated_train_test
 from performance.assessModels import assess_models
 from simulation_settings import load_sim_settings
 
@@ -27,8 +27,12 @@ else:
 st_time = time.time()
 sim_setting = load_sim_settings(sim_file)
 config_save(sim_file)
-X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting)
-# X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting, category = [])
+
+if 'PCA' in sim_setting['path_X_train']  or 'AE' in sim_setting['path_X_train']:
+    X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting, category = [])
+    
+else:
+    X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting)
 
 print(X_train.shape)
 print(X_test.shape)

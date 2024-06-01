@@ -33,8 +33,8 @@ sim_setting = load_sim_settings(sim_file)
 
 X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting)
 ############### PCA for dim reduction ##############
-# save_name = list(sim_setting['models'].keys())[0]
-# save_PCA_reduced(X_train, X_test, sim_setting['base_dir'], save_name, 0.8)
+save_name = list(sim_setting['models'].keys())[0]
+save_PCA_reduced(X_train, X_test, sim_setting['base_dir'], save_name, 0.8)
 
 ############### autoencoder for dim reduction ##############
 n_dim = 148
