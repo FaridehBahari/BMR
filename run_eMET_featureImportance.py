@@ -2,7 +2,7 @@ import pickle
 import os
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
-from simulation_settings import load_sim_settings
+from simulation_settings import load_sim_settings, config_get
 from readFtrs_Rspns import split_by_element, load_regulatory_elems
 import numpy as np
 import pandas as pd
@@ -11,6 +11,25 @@ from performance.assessModels import assess_model
 from sklearn.metrics import mean_squared_error
 from models.GBM_functions import run_gbm, predict_gbm
 from models.runBMR_functions import  get_features_category
+import shutil
+import configparser
+
+def config_save_eMET(sim_file, change_dir_save = ''):
+    sim_setting = load_sim_settings(sim_file)
+    base_dir = sim_setting['base_dir']
+    base_dir = f'{base_dir}{change_dir_save}/'
+    sim_config = configparser.ConfigParser()
+    sim_config.read(sim_file)
+    for model_name in sim_config['models']:
+        print(model_name)
+        config_file = sim_config['models'][model_name]
+        config_model = configparser.ConfigParser()
+        config_model.read(config_file)
+        save_name = config_get(config_model, 'main', 'method',config_file)
+        os.makedirs(f'{base_dir}/{save_name}/', exist_ok= True)
+        shutil.copy(config_file, f'{base_dir+ save_name }/{os.path.basename(config_file)}')
+        shutil.copy(sim_file, f'{base_dir+ save_name }/{os.path.basename(sim_file)}')
+        
 
 def generate_nonDriver_Dat(X_regLmnt, Y_regLmnt, drivers):
     
@@ -128,9 +147,9 @@ def fit_per_element_bootstrap_gbm(X_regLmnt, Y_regLmnt, drivers, gbm_hyperparams
         with open(path_pretrained_model, 'rb') as file:
             loaded_model = pickle.load(file)
     
-    elems = ["lncrna.ncrna", "lncrna.promCore","gc19_pc.ss", "enhancers",
+    elems = ["gc19_pc.ss", "enhancers",
              "gc19_pc.cds", "gc19_pc.promCore",
-             "gc19_pc.5utr", "gc19_pc.3utr"]
+             "gc19_pc.5utr", "gc19_pc.3utr"] #"lncrna.ncrna", "lncrna.promCore",
     
     count_non_nans = pd.DataFrame()
     all_elems_ensemble_pred = pd.DataFrame()
@@ -334,215 +353,79 @@ def fit_per_element_bootstrap_gbm2(elems, X_regLmnt, Y_regLmnt, drivers, NN_hype
 
 
 
-def eMET(sim_setting, path_ann_pcawg_IDs, path_pretrained_model, n_bootstrap = 100):
+######################## GBM element-specific ########################
+
+
+
+
+def one_group_importance_eMET(sim_file, path_ann_pcawg_IDs, n_bootstrap = 100):
     
+    path_ann_pcawg_IDs = '../external/BMR/procInput/ann_PCAWG_ID_complement.csv'
+    sim_file = 'configs/rate_based/sim_setting.ini'
+
+    sim_setting = load_sim_settings(sim_file)
+
     X_regLmnt, Y_regLmnt = load_regulatory_elems(sim_setting)
-    
-    # restrict features to DP features
-    new_ftrs = ['APOBEC3A', 'E001-DNAMethylSBS', 'E002-DNAMethylSBS',
-                'E003-DNAMethylSBS', 
-     'E004-DNAMethylSBS', 'E005-DNAMethylSBS', 'E006-DNAMethylSBS', 
-     'E007-DNAMethylSBS', 'E008-DNAMethylSBS', 'E009-DNAMethylSBS', 
-     'E010-DNAMethylSBS', 'E011-DNAMethylSBS', 'E012-DNAMethylSBS', 
-     'E013-DNAMethylSBS', 'E014-DNAMethylSBS', 'E015-DNAMethylSBS',
-     'E016-DNAMethylSBS', 'E017-DNAMethylSBS', 'E018-DNAMethylSBS', 
-     'E019-DNAMethylSBS', 'E020-DNAMethylSBS', 'E021-DNAMethylSBS',
-     'E022-DNAMethylSBS', 'E023-DNAMethylSBS', 'E024-DNAMethylSBS', 
-     'E025-DNAMethylSBS', 'E026-DNAMethylSBS', 'E027-DNAMethylSBS',
-     'E028-DNAMethylSBS', 'E029-DNAMethylSBS', 'E030-DNAMethylSBS', 
-     'E031-DNAMethylSBS', 'E032-DNAMethylSBS', 'E033-DNAMethylSBS',
-     'E034-DNAMethylSBS', 'E035-DNAMethylSBS', 'E036-DNAMethylSBS', 
-     'E037-DNAMethylSBS', 'E038-DNAMethylSBS', 'E039-DNAMethylSBS', 
-     'E040-DNAMethylSBS', 'E041-DNAMethylSBS', 'E042-DNAMethylSBS', 
-     'E043-DNAMethylSBS', 'E044-DNAMethylSBS', 'E045-DNAMethylSBS', 
-     'E046-DNAMethylSBS', 'E047-DNAMethylSBS', 'E048-DNAMethylSBS', 
-     'E049-DNAMethylSBS', 'E050-DNAMethylSBS', 'E051-DNAMethylSBS', 
-     'E052-DNAMethylSBS', 'E053-DNAMethylSBS', 'E054-DNAMethylSBS',
-     'E055-DNAMethylSBS', 'E056-DNAMethylSBS', 'E057-DNAMethylSBS',
-     'E058-DNAMethylSBS', 'E059-DNAMethylSBS', 'E061-DNAMethylSBS',
-     'E062-DNAMethylSBS', 'E063-DNAMethylSBS', 'E065-DNAMethylSBS',
-     'E066-DNAMethylSBS', 'E067-DNAMethylSBS', 'E068-DNAMethylSBS',
-     'E069-DNAMethylSBS', 'E070-DNAMethylSBS', 'E071-DNAMethylSBS', 
-     'E072-DNAMethylSBS', 'E073-DNAMethylSBS', 'E074-DNAMethylSBS', 
-     'E075-DNAMethylSBS', 'E076-DNAMethylSBS', 'E077-DNAMethylSBS', 
-     'E078-DNAMethylSBS', 'E079-DNAMethylSBS', 'E080-DNAMethylSBS', 
-     'E081-DNAMethylSBS', 'E082-DNAMethylSBS', 'E083-DNAMethylSBS', 
-     'E084-DNAMethylSBS', 'E085-DNAMethylSBS', 'E086-DNAMethylSBS', 
-     'E087-DNAMethylSBS', 'E088-DNAMethylSBS', 'E089-DNAMethylSBS', 
-     'E090-DNAMethylSBS', 'E091-DNAMethylSBS', 'E092-DNAMethylSBS', 
-     'E093-DNAMethylSBS', 'E094-DNAMethylSBS', 'E095-DNAMethylSBS', 
-     'E096-DNAMethylSBS', 'E097-DNAMethylSBS', 'E098-DNAMethylSBS', 
-     'E099-DNAMethylSBS', 'E100-DNAMethylSBS', 'E101-DNAMethylSBS', 
-     'E102-DNAMethylSBS', 'E103-DNAMethylSBS', 'E104-DNAMethylSBS', 
-     'E105-DNAMethylSBS', 'E106-DNAMethylSBS', 'E107-DNAMethylSBS', 
-     'E108-DNAMethylSBS', 'E109-DNAMethylSBS', 'E110-DNAMethylSBS', 
-     'E111-DNAMethylSBS', 'E112-DNAMethylSBS', 'E113-DNAMethylSBS', 
-     'E114-DNAMethylSBS', 'E115-DNAMethylSBS', 'E116-DNAMethylSBS', 
-     'E117-DNAMethylSBS', 'E118-DNAMethylSBS', 'E119-DNAMethylSBS', 
-     'E120-DNAMethylSBS', 'E121-DNAMethylSBS', 'E122-DNAMethylSBS', 
-     'E123-DNAMethylSBS', 'E124-DNAMethylSBS', 'E125-DNAMethylSBS', 
-     'E126-DNAMethylSBS', 'E127-DNAMethylSBS', 'E128-DNAMethylSBS', 
-     'E129-DNAMethylSBS'
-     # , 'primates_phastCons46way', 
-     # 'primates_phyloP46way', 'vertebrate_phastCons46way'
-     ]
 
-    columns_to_exclude = [col for col in new_ftrs if col in X_regLmnt.columns]
-    X_regLmnt = X_regLmnt.drop(columns=columns_to_exclude, errors='ignore') 
 
-    # reorder X_regLmnt based on intergenic features to be compatible for model loading and transfer learning
-    # np.save('tmp_intergenicFeaturesOrder.npy', intergenicFeatures)
-    # intergenicFeatures = np.load('tmp_intergenicFeaturesOrder.npy', allow_pickle=True)
-    # X_regLmnt = X_regLmnt[intergenicFeatures]
+
 
     drivers = get_identified_drivers(path_ann_pcawg_IDs, based_on = 'all')
+    sim_base_dir = sim_setting['base_dir']
 
-
-    base_dir = sim_setting['base_dir']
     models = sim_setting['models']
     model_name = list(models.keys())[0]
     m = models[model_name]
-    name = m['save_name']
+    # name = m['save_name']
     gbm_hyperparams = m['Args']
-    save_path_model = f'{base_dir}/{model_name}/'
-    gbm_hyperparams['path_save'] = f'{save_path_model}models_interval/'
     Nr_pair_acc = sim_setting['Nr_pair_acc']
+    
+    categories = [ 'nucleotide content', 'DNA_accessibility', 'HiC', 'Epigenetic_mark', 'RNA_expression', 'Replication_timing', 'conservation']
 
-
-
-
-
-
-    # pred_ensemble_bootstraps, n_runs_per_pred = fit_per_element_bootstrap_gbm(X_regLmnt, Y_regLmnt, drivers, gbm_hyperparams, 
-    #                                   n_bootstrap)
-    pred_ensemble_bootstraps, n_runs_per_pred = fit_per_element_bootstrap_gbm(X_regLmnt, Y_regLmnt, drivers, gbm_hyperparams, 
-                                      n_bootstrap, path_pretrained_model = path_pretrained_model,
-                                      transferlearning = True)
-
-
-    obs_rates = Y_regLmnt.nMut/(Y_regLmnt.length*Y_regLmnt.N)
-    obs_pred_rates = pd.concat([obs_rates, pred_ensemble_bootstraps], axis=1)
-    obs_pred_rates = pd.concat([obs_pred_rates, n_runs_per_pred], axis=1)
-    obs_pred_rates.columns = ['obs_rates', 'pred_rates', 'n_runs_per_pred']
-    obs_pred_rates['n_runs_per_pred'] = obs_pred_rates['n_runs_per_pred'].fillna(0)
-
-
-    os.makedirs(f'{base_dir}/{model_name}/', exist_ok=True)
-    obs_pred_rates.to_csv(f'{base_dir}/{model_name}/{model_name}_{n_bootstrap}_predTest.tsv', sep = '\t')
-
-    assessment = assess_model(obs_pred_rates.pred_rates, obs_pred_rates.obs_rates, 
-                  Nr_pair_acc, model_name, per_element=True)
-
-    assessment.to_csv(f'{base_dir}/{model_name}/{model_name}_ensemble_bootstraps{n_bootstrap}_assessment.tsv', sep = '\t')
-
-
-
-
-
-######################## GBM element-specific ########################
-# path_ann_pcawg_IDs = '../external/BMR/procInput/ann_PCAWG_ID_complement.csv'
-# sim_file = 'configs/rate_based/sim_setting.ini'
-
-# sim_setting = load_sim_settings(sim_file)
-
-
-# import shutil
-# import configparser
-# from simulation_settings import load_sim_settings, config_get
-
-
-# def config_save2(sim_file, change_dir_save = ''):
-#     sim_setting = load_sim_settings(sim_file)
-#     base_dir = sim_setting['base_dir']
-#     base_dir = f'{base_dir}{change_dir_save}/'
-#     sim_config = configparser.ConfigParser()
-#     sim_config.read(sim_file)
-#     for model_name in sim_config['models']:
-#         print(model_name)
-#         config_file = sim_config['models'][model_name]
-#         config_model = configparser.ConfigParser()
-#         config_model.read(config_file)
-#         save_name = config_get(config_model, 'main', 'method',config_file)
-#         os.makedirs(f'{base_dir}/{save_name}/', exist_ok= True)
-#         shutil.copy(config_file, f'{base_dir+ save_name }/{os.path.basename(config_file)}')
-#         shutil.copy(sim_file, f'{base_dir+ save_name }/{os.path.basename(sim_file)}')
+    for feature_category in categories:
         
+        print(feature_category)
+        
+        config_save_eMET(sim_file, feature_category)
+        
+        ftrs = get_features_category(category= [feature_category])
+        
+        X_regLmnt_ftrs = X_regLmnt.loc[:, ftrs]
+        print(X_regLmnt_ftrs.shape)
+        
+        base_dir = f'{sim_base_dir}{feature_category}'
+        
+        save_path_model = f'{base_dir}/{model_name}/'
+        gbm_hyperparams['path_save'] = f'{save_path_model}models_interval/'
+        
+        if feature_category == 'nucleotide content':
+            feature_category_name = 'nucleotideContext'
+        else:
+           feature_category_name = feature_category
+        pred_ensemble_bootstraps, n_runs_per_pred = fit_per_element_bootstrap_gbm(X_regLmnt_ftrs, Y_regLmnt, drivers, gbm_hyperparams, 
+                                          n_bootstrap, path_pretrained_model = f'../external/BMR/output/featureImportance/GBM_{feature_category_name}/GBM_{feature_category_name}_model.pkl',
+                                          transferlearning = True, save_model=True)
+        obs_rates = Y_regLmnt.nMut/(Y_regLmnt.length*Y_regLmnt.N)
+        obs_pred_rates = pd.concat([obs_rates, pred_ensemble_bootstraps], axis=1)
+        obs_pred_rates = pd.concat([obs_pred_rates, n_runs_per_pred], axis=1)
+        obs_pred_rates.columns = ['obs_rates', 'pred_rates', 'n_runs_per_pred']
+        obs_pred_rates['n_runs_per_pred'] = obs_pred_rates['n_runs_per_pred'].fillna(0)
+        
+        os.makedirs(f'{base_dir}/{model_name}/', exist_ok=True)
+        obs_pred_rates.to_csv(f'{base_dir}/{model_name}/{model_name}_{n_bootstrap}_predTest.tsv', sep = '\t')
+        
+        assessment = assess_model(obs_pred_rates.pred_rates, obs_pred_rates.obs_rates, 
+                      Nr_pair_acc, model_name, per_element=True)
+        
+        assessment.to_csv(f'{base_dir}/{model_name}/{model_name}_ensemble_bootstraps{n_bootstrap}_assessment.tsv', sep = '\t')
 
 
-# X_regLmnt, Y_regLmnt = load_regulatory_elems(sim_setting)
-
-
-# def select_groups_from_dict(dictionary, keys_to_include):
-    
-#     # Create an empty list to store the values
-#     included_values = []
-    
-#     # Iterate through the original dictionary
-#     for key, value in dictionary.items():
-#         # Check if the key should be included
-#         if key in keys_to_include:
-#             # Extend the list with the values
-#             included_values.extend(value)
-            
-#     return included_values
-
-
-# drivers = get_identified_drivers(path_ann_pcawg_IDs, based_on = 'all')
-# sim_base_dir = sim_setting['base_dir']
-
-# models = sim_setting['models']
-# model_name = list(models.keys())[0]
-# m = models[model_name]
-# name = m['save_name']
-# gbm_hyperparams = m['Args']
-# Nr_pair_acc = sim_setting['Nr_pair_acc']
-# n_bootstrap = 100
-
-
-# categories = [  'DNA_accessibility', 'HiC', 'Epigenetic_mark', 'RNA_expression', 'Replication_timing', 'conservation'] #'nucleotide content',
-
-# for feature_category in categories:
-    
-#     print(feature_category)
-    
-#     config_save2(sim_file, feature_category)
-    
-#     ftrs = get_features_category(category= [feature_category])
-    
-#     X_regLmnt_ftrs = X_regLmnt.loc[:, ftrs]
-#     print(X_regLmnt_ftrs.shape)
-    
-#     base_dir = f'{sim_base_dir}{feature_category}'
-    
-#     save_path_model = f'{base_dir}/{model_name}/'
-#     gbm_hyperparams['path_save'] = f'{save_path_model}models_interval/'
-    
-#     if feature_category == 'nucleotide content':
-#         feature_category_name = 'nucleotideContext'
-#     else:
-#        feature_category_name = feature_category
-#     pred_ensemble_bootstraps, n_runs_per_pred = fit_per_element_bootstrap_gbm(X_regLmnt_ftrs, Y_regLmnt, drivers, gbm_hyperparams, 
-#                                       n_bootstrap, path_pretrained_model = f'../external/BMR/output/featureImportance/GBM_{feature_category_name}/GBM_{feature_category_name}_model.pkl',
-#                                       transferlearning = True, save_model=True)
-#     obs_rates = Y_regLmnt.nMut/(Y_regLmnt.length*Y_regLmnt.N)
-#     obs_pred_rates = pd.concat([obs_rates, pred_ensemble_bootstraps], axis=1)
-#     obs_pred_rates = pd.concat([obs_pred_rates, n_runs_per_pred], axis=1)
-#     obs_pred_rates.columns = ['obs_rates', 'pred_rates', 'n_runs_per_pred']
-#     obs_pred_rates['n_runs_per_pred'] = obs_pred_rates['n_runs_per_pred'].fillna(0)
-    
-#     os.makedirs(f'{base_dir}/{model_name}/', exist_ok=True)
-#     obs_pred_rates.to_csv(f'{base_dir}/{model_name}/{model_name}_{n_bootstrap}_predTest.tsv', sep = '\t')
-    
-#     assessment = assess_model(obs_pred_rates.pred_rates, obs_pred_rates.obs_rates, 
-#                   Nr_pair_acc, model_name, per_element=True)
-    
-#     assessment.to_csv(f'{base_dir}/{model_name}/{model_name}_ensemble_bootstraps{n_bootstrap}_assessment.tsv', sep = '\t')
 
     
 
 
-# ##########################################################################
-# ##################################################################################
+##########################################################################
+##################################################################################
 # import pandas as pd
 # import os
 
@@ -552,9 +435,9 @@ def eMET(sim_setting, path_ann_pcawg_IDs, path_pretrained_model, n_bootstrap = 1
 #               'conservation']
 
 # # Element names
-# elems = ["lncrna.ncrna", "lncrna.promCore","gc19_pc.ss", "enhancers",
+# elems = ["gc19_pc.ss", "enhancers",
 #          "gc19_pc.cds", "gc19_pc.promCore",
-#          "gc19_pc.5utr", "gc19_pc.3utr"]
+#          "gc19_pc.5utr", "gc19_pc.3utr"] #"lncrna.ncrna", "lncrna.promCore",
 
 # # Read the second TSV file
 # full_model_df = pd.read_csv("../external/BMR/output/TL/GBM/GBM_ensemble_bootstraps100_assessment.tsv", 
@@ -605,49 +488,75 @@ def eMET(sim_setting, path_ann_pcawg_IDs, path_pretrained_model, n_bootstrap = 1
 # #     ratios_df.to_csv(f"../external/BMR/output/GroupImportance/eMET/{category}/GBM/importanceRatios_{category}.tsv", sep="\t", index=False)
 
 
-# # ###############################################################################
-# categories = [ 'nucleotide content', 'DNA_accessibility', 'HiC', 
-#               'Epigenetic_mark', 'RNA_expression', 'Replication_timing',
-#               'conservation']
-
-
-# full_model_df = pd.read_csv("../external/BMR/output/TL/GBM/GBM_ensemble_bootstraps100_assessment.tsv", 
-#                             sep=",", index_col=0, skipinitialspace=True)
+# ###############################################################################
+categories = [ 'nucleotide content', 'DNA_accessibility', 'HiC', 
+              'Epigenetic_mark', 'RNA_expression', 'Replication_timing',
+              'conservation']
 
 
 
-# for category in categories:
+
+path_ann_pcawg_IDs = '../external/BMR/procInput/ann_PCAWG_ID_complement.csv'
+sim_file = 'configs/rate_based/sim_setting.ini'
+
+sim_setting = load_sim_settings(sim_file)
+
+
+
+
+
+
+drivers = get_identified_drivers(path_ann_pcawg_IDs, based_on = 'all')
+sim_base_dir = sim_setting['base_dir']
+
+models = sim_setting['models']
+model_name = list(models.keys())[0]
+m = models[model_name]
+# name = m['save_name']
+
+n_bootstrap = 100
+
+
+full_model_df = pd.read_csv(f'{sim_base_dir}/{model_name}/{model_name}_ensemble_bootstraps{n_bootstrap}_assessment.tsv', 
+                            sep=",", index_col=0, skipinitialspace=True)
+
+
+
+for category in categories:
     
     
         
-#     path_one_group = f'../external/BMR/output/eMET_GroupImportance/{category}/GBM/GBM_ensemble_bootstraps100_assessment.tsv'
+    path_one_group = f'../external/BMR/output/eMET_GroupImportance/{category}/{model_name}/{model_name}_ensemble_bootstraps100_assessment.tsv'
      
-#     one_group_df = pd.read_csv(path_one_group, sep="\t", index_col=0)
+    one_group_df = pd.read_csv(path_one_group, sep="\t", index_col=0)
     
-#     # Extract correlation values from the dataframes
-#     one_group_corr = one_group_df.loc['corr_GBM']
-#     full_model_corr = full_model_df.loc['corr_GBM']
+    corr_model = f'corr_{model_name}'
     
-#     # Create a dataframe to store the ratios
-#     ratios_df = pd.DataFrame(columns=["Element", "Ratio"])
+    # Extract correlation values from the dataframes
+    one_group_corr = one_group_df.loc[corr_model]
+    full_model_corr = full_model_df.loc[corr_model]
     
-#     # Calculate and store the ratios for each element type
-#     for element in one_group_corr.index:
-#         if element in full_model_corr.index:
-#             ratio = one_group_corr[element] / full_model_corr[element]
-#             ratios_df.loc[len(ratios_df)] = [element, ratio]
+    # Create a dataframe to store the ratios
+    ratios_df = pd.DataFrame(columns=["Element", "Ratio"])
+    
+    # Calculate and store the ratios for each element type
+    for element in one_group_corr.index:
+        if element in full_model_corr.index:
+            ratio = one_group_corr[element] / full_model_corr[element]
+            ratios_df.loc[len(ratios_df)] = [element, ratio]
            
-#     # Save the ratios to a new TSV file
-#     ratios_df.to_csv(f"../external/BMR/output/eMET_GroupImportance/{category}/GBM/importanceRatios_{category}.tsv", sep="\t", index=False)
+    # Save the ratios to a new TSV file
+    ratios_df.to_csv(f"../external/BMR/output/eMET_GroupImportance/{category}/{model_name}/importanceRatios_{category}.tsv", sep="\t", index=False)
 
 
-# ###############################################################################
-# all_ratio_dfs = pd.DataFrame(columns=["Element", "Ratio", "feature_category"])
-# for category in categories:
+###############################################################################
+all_ratio_dfs = pd.DataFrame(columns=["Element", "Ratio", "feature_category"])
+
+for category in categories:
     
-#     ratio_df = pd.read_csv(f"../external/BMR/output/eMET_GroupImportance/{category}/GBM/importanceRatios_{category}.tsv", sep="\t")
-#     ratio_df["feature_category"] = category
+    ratio_df = pd.read_csv(f"../external/BMR/output/eMET_GroupImportance/{category}/{model_name}/importanceRatios_{category}.tsv", sep="\t")
+    ratio_df["feature_category"] = category
     
-#     all_ratio_dfs = pd.concat([all_ratio_dfs, ratio_df], axis = 0)
+    all_ratio_dfs = pd.concat([all_ratio_dfs, ratio_df], axis = 0)
 
-# all_ratio_dfs.to_csv("../external/BMR/output/eMET_GroupImportance/importanceRatios.csv", sep=",")   
+all_ratio_dfs.to_csv("../external/BMR/output/eMET_GroupImportance/importanceRatios.csv", sep=",")   

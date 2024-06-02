@@ -793,7 +793,7 @@ importance_plot <- function(parent_directory, path_GBM, LOO = FALSE,
     font_size = 14
   }
   
-  plot_data$Feature.Group <- gsub("NucleotideContext", "Nucleotide Content", plot_data$Feature.Group)
+  plot_data$Feature.Group <- gsub("NucleotideContext", "Nucleotide content", plot_data$Feature.Group)
   plot_data$Feature.Group <- factor(plot_data$Feature.Group, 
                                     levels = plot_data$Feature.Group[order(-plot_data$Correlation)])
   
@@ -807,7 +807,7 @@ importance_plot <- function(parent_directory, path_GBM, LOO = FALSE,
                                  `Replication timing`= "#43589F",
                                  HiC = "#D53E4F",
                                  `DNA accessibility` = "#ABDDA4",
-                                 `Nucleotide Content` = "#D4B9DA",
+                                 `Nucleotide content` = "#D4B9DA",
                                  Conservation = "#D1E5F0"))  +
     #   'black', "#43589F", '#7393B3', "#3288BD", "#66C2A5", "#ABDDA4", 
     # "#E6F598", "#FDAE61", "#D53E4F",

@@ -232,18 +232,15 @@ def perform_burdenTest2(path_pred, path_Y_regLmnts):
 
 
 
-dir_paths =  [
-    # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/',
-    #            '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/RF/',
-    #            '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_poisLoss/',
-               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/siamese_cpu/',
-               '../external/BMR/output/TL/GBM/',
-               '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_mseLoss/'
-              ]
+# dir_paths =  [
+#     # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/',
+#     #            '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/RF/',
+#     #            '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_poisLoss/',
+#                '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/siamese_cpu/',
+#                '../external/BMR/output/TL/GBM/',
+#                '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_mseLoss/'
+#               ]
 
-for dir_path in dir_paths:
-    perform_burdenTest(dir_path)
+# for dir_path in dir_paths:
+#     perform_burdenTest(dir_path)
 
-# path_Y_regLmnts = '../external/rawInput/Pan_Cancer_test_y.tsv'
-# path_pred = '../external/output/GBM_transferLearning/GBM/GBM_ensemble_bootstraps25_preds.tsv'
-# perform_burdenTest2(path_pred, path_Y_regLmnts)
