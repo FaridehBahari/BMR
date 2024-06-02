@@ -128,9 +128,9 @@ def fit_per_element_bootstrap_gbm(X_regLmnt, Y_regLmnt, drivers, gbm_hyperparams
         with open(path_pretrained_model, 'rb') as file:
             loaded_model = pickle.load(file)
     
-    elems = ["lncrna.ncrna", "lncrna.promCore","gc19_pc.ss", "enhancers",
+    elems = ["gc19_pc.ss", "enhancers",
              "gc19_pc.cds", "gc19_pc.promCore",
-             "gc19_pc.5utr", "gc19_pc.3utr"]
+             "gc19_pc.5utr", "gc19_pc.3utr"] #"lncrna.ncrna", "lncrna.promCore",
     
     count_non_nans = pd.DataFrame()
     all_elems_ensemble_pred = pd.DataFrame()
@@ -242,8 +242,6 @@ def fit_per_element_bootstrap_gbm2(elems, X_regLmnt, Y_regLmnt, drivers, NN_hype
         with open(path_pretrained_model, 'rb') as file:
             loaded_model = pickle.load(file)
         
-    
-    # elems = ["lncrna.ncrna", "lncrna.promCore", "gc19_pc.promCore",   "gc19_pc.ss", "gc19_pc.5utr", "gc19_pc.3utr", "enhancers",  "gc19_pc.cds"]
     
     all_GBM_preds = pd.read_csv('../external/output/GBM/GBM_predTest.tsv', 
                                 sep='\t', index_col='binID')
