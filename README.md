@@ -56,4 +56,4 @@ python run_burdenTest.py <path/to/BMR/directory>
 
 ## Contact
 
-For any questions or issues, please open an issue on this repository or contact [hesam.montazeri@ut.ac.ir].
+For any questions or issues, please open an issue on this repository or contact [bahari.faride@gmail.com].
