@@ -13,5 +13,4 @@ sim_setting = load_sim_settings(sim_file)
 
 one_group_importance_eMET(sim_file, path_ann_pcawg_IDs, path_oneGroup_intergenic, n_bootstrap)
 
-save_importance_ratio_dfs(sim_setting, path_full_model_eMET)
-
+save_importance_ratio_dfs(sim_setting, path_full_model_eMET, n_bootstrap)

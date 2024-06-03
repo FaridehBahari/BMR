@@ -526,11 +526,11 @@ def one_group_importance_eMET(sim_file, path_ann_pcawg_IDs, path_pretrained_mode
         assessment.to_csv(f'{base_dir}/{model_name}/{model_name}_ensemble_bootstraps{n_bootstrap}_assessment.tsv', sep = '\t')
 
 
-def save_importance_ratio_dfs(sim_setting, path_full_model_eMET):
+def save_importance_ratio_dfs(sim_setting, path_full_model_eMET, n_bootstrap):
     
     categories = [ 'nucleotide content', 'HiC', 
-                  
-                  'conservation'] #'DNA_accessibility', 'Epigenetic_mark', 'RNA_expression', 'Replication_timing',
+                  'DNA_accessibility', 'Epigenetic_mark', 'RNA_expression', 'Replication_timing',
+                  'conservation'] 
     sim_base_dir = sim_setting['base_dir']
     models = sim_setting['models']
     model_name = list(models.keys())[0]
