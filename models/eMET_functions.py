@@ -459,9 +459,6 @@ def one_group_importance_eMET(sim_file, path_ann_pcawg_IDs, path_pretrained_mode
     
 
     # path_pretrained_model = '../external/BMR/output/featureImportance/GBM_feature_group/GBM_feature_group_model.pkl'
-    
-    path_ann_pcawg_IDs = '../external/BMR/procInput/ann_PCAWG_ID_complement.csv'
-    sim_file = 'configs/rate_based/sim_setting.ini'
 
     sim_setting = load_sim_settings(sim_file)
 
@@ -570,9 +567,10 @@ def save_importance_ratio_dfs(sim_setting, path_full_model_eMET, n_bootstrap):
     
     for category in categories:
         
-        ratio_df = pd.read_csv(f'{base_dir}/{model_name}/{model_name}importanceRatios_{category}.tsv', sep="\t")
+        ratio_df = pd.read_csv(f'{sim_base_dir}{category}/{model_name}/{model_name}importanceRatios_{category}.tsv', sep="\t")
         ratio_df["feature_category"] = category
         
         all_ratio_dfs = pd.concat([all_ratio_dfs, ratio_df], axis = 0)
         
-    all_ratio_dfs.to_csv("{sim_base_dir}/importanceRatios.csv", sep=",")   
+    all_ratio_dfs.to_csv(f"{sim_base_dir}/importanceRatios.csv", sep=",")   
+
