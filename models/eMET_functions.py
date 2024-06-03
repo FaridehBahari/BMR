@@ -433,219 +433,146 @@ def eMET(sim_setting, path_ann_pcawg_IDs, path_pretrained_model, n_bootstrap = 1
 
     assessment.to_csv(f'{base_dir}/{model_name}/{model_name}_ensemble_bootstraps{n_bootstrap}_assessment.tsv', sep = '\t')
 
+import shutil
+import configparser
+from simulation_settings import config_get
 
-
-
-
-######################## GBM element-specific ########################
-# path_ann_pcawg_IDs = '../external/BMR/procInput/ann_PCAWG_ID_complement.csv'
-# sim_file = 'configs/rate_based/sim_setting.ini'
-
-# sim_setting = load_sim_settings(sim_file)
-
-
-# import shutil
-# import configparser
-# from simulation_settings import load_sim_settings, config_get
-
-
-# def config_save2(sim_file, change_dir_save = ''):
-#     sim_setting = load_sim_settings(sim_file)
-#     base_dir = sim_setting['base_dir']
-#     base_dir = f'{base_dir}{change_dir_save}/'
-#     sim_config = configparser.ConfigParser()
-#     sim_config.read(sim_file)
-#     for model_name in sim_config['models']:
-#         print(model_name)
-#         config_file = sim_config['models'][model_name]
-#         config_model = configparser.ConfigParser()
-#         config_model.read(config_file)
-#         save_name = config_get(config_model, 'main', 'method',config_file)
-#         os.makedirs(f'{base_dir}/{save_name}/', exist_ok= True)
-#         shutil.copy(config_file, f'{base_dir+ save_name }/{os.path.basename(config_file)}')
-#         shutil.copy(sim_file, f'{base_dir+ save_name }/{os.path.basename(sim_file)}')
+def config_save_eMET(sim_file, change_dir_save = ''):
+    sim_setting = load_sim_settings(sim_file)
+    base_dir = sim_setting['base_dir']
+    base_dir = f'{base_dir}{change_dir_save}/'
+    sim_config = configparser.ConfigParser()
+    sim_config.read(sim_file)
+    for model_name in sim_config['models']:
+        print(model_name)
+        config_file = sim_config['models'][model_name]
+        config_model = configparser.ConfigParser()
+        config_model.read(config_file)
+        save_name = config_get(config_model, 'main', 'method',config_file)
+        os.makedirs(f'{base_dir}/{save_name}/', exist_ok= True)
+        shutil.copy(config_file, f'{base_dir+ save_name }/{os.path.basename(config_file)}')
+        shutil.copy(sim_file, f'{base_dir+ save_name }/{os.path.basename(sim_file)}')
         
 
 
-# X_regLmnt, Y_regLmnt = load_regulatory_elems(sim_setting)
-
-
-# def select_groups_from_dict(dictionary, keys_to_include):
-    
-#     # Create an empty list to store the values
-#     included_values = []
-    
-#     # Iterate through the original dictionary
-#     for key, value in dictionary.items():
-#         # Check if the key should be included
-#         if key in keys_to_include:
-#             # Extend the list with the values
-#             included_values.extend(value)
-            
-#     return included_values
-
-
-# drivers = get_identified_drivers(path_ann_pcawg_IDs, based_on = 'all')
-# sim_base_dir = sim_setting['base_dir']
-
-# models = sim_setting['models']
-# model_name = list(models.keys())[0]
-# m = models[model_name]
-# name = m['save_name']
-# gbm_hyperparams = m['Args']
-# Nr_pair_acc = sim_setting['Nr_pair_acc']
-# n_bootstrap = 100
-
-
-# categories = [  'DNA_accessibility', 'HiC', 'Epigenetic_mark', 'RNA_expression', 'Replication_timing', 'conservation'] #'nucleotide content',
-
-# for feature_category in categories:
-    
-#     print(feature_category)
-    
-#     config_save2(sim_file, feature_category)
-    
-#     ftrs = get_features_category(category= [feature_category])
-    
-#     X_regLmnt_ftrs = X_regLmnt.loc[:, ftrs]
-#     print(X_regLmnt_ftrs.shape)
-    
-#     base_dir = f'{sim_base_dir}{feature_category}'
-    
-#     save_path_model = f'{base_dir}/{model_name}/'
-#     gbm_hyperparams['path_save'] = f'{save_path_model}models_interval/'
-    
-#     if feature_category == 'nucleotide content':
-#         feature_category_name = 'nucleotideContext'
-#     else:
-#        feature_category_name = feature_category
-#     pred_ensemble_bootstraps, n_runs_per_pred = fit_per_element_bootstrap_gbm(X_regLmnt_ftrs, Y_regLmnt, drivers, gbm_hyperparams, 
-#                                       n_bootstrap, path_pretrained_model = f'../external/BMR/output/featureImportance/GBM_{feature_category_name}/GBM_{feature_category_name}_model.pkl',
-#                                       transferlearning = True, save_model=True)
-#     obs_rates = Y_regLmnt.nMut/(Y_regLmnt.length*Y_regLmnt.N)
-#     obs_pred_rates = pd.concat([obs_rates, pred_ensemble_bootstraps], axis=1)
-#     obs_pred_rates = pd.concat([obs_pred_rates, n_runs_per_pred], axis=1)
-#     obs_pred_rates.columns = ['obs_rates', 'pred_rates', 'n_runs_per_pred']
-#     obs_pred_rates['n_runs_per_pred'] = obs_pred_rates['n_runs_per_pred'].fillna(0)
-    
-#     os.makedirs(f'{base_dir}/{model_name}/', exist_ok=True)
-#     obs_pred_rates.to_csv(f'{base_dir}/{model_name}/{model_name}_{n_bootstrap}_predTest.tsv', sep = '\t')
-    
-#     assessment = assess_model(obs_pred_rates.pred_rates, obs_pred_rates.obs_rates, 
-#                   Nr_pair_acc, model_name, per_element=True)
-    
-#     assessment.to_csv(f'{base_dir}/{model_name}/{model_name}_ensemble_bootstraps{n_bootstrap}_assessment.tsv', sep = '\t')
-
+def one_group_importance_eMET(sim_file, path_ann_pcawg_IDs, path_pretrained_model, n_bootstrap = 100): #path_pretrained_model = f'../external/BMR/output/featureImportance/GBM_{feature_category_name}/GBM_{feature_category_name}_model.pkl'
     
 
-
-# ##########################################################################
-# ##################################################################################
-# import pandas as pd
-# import os
-
-
-# categories = [ 'nucleotide content', 'DNA_accessibility', 'HiC', 
-#               'Epigenetic_mark', 'RNA_expression', 'Replication_timing',
-#               'conservation']
-
-# # Element names
-# elems = ["lncrna.ncrna", "lncrna.promCore","gc19_pc.ss", "enhancers",
-#          "gc19_pc.cds", "gc19_pc.promCore",
-#          "gc19_pc.5utr", "gc19_pc.3utr"]
-
-# # Read the second TSV file
-# full_model_df = pd.read_csv("../external/BMR/output/TL/GBM/GBM_ensemble_bootstraps100_assessment.tsv", 
-#                             sep=",", index_col=0, skipinitialspace=True)
-
-
-# # for category in categories:
+    # path_pretrained_model = '../external/BMR/output/featureImportance/GBM_feature_group/GBM_feature_group_model.pkl'
     
-# #     # Directory containing the TSV files
-# #     directory = f"../external/BMR/output/GroupImportance/eMET/{category}/GBM/models_interval"
-    
-# #     # Dictionary to store data for each element
-# #     data = {elem: {'Correlation': 0, 'MSE': 0} for elem in elems}
-    
-# #     # Iterate through each file in the directory
-# #     for elem in elems:
-# #         filename = f'correlation_mse_results_{elem}.tsv'
-# #         # Read the TSV file
-# #         df = pd.read_csv(os.path.join(directory, filename), sep="\t")
-            
-# #         # Calculate mean of correlation and MSE
-# #         mean_corr = df['Correlation'].mean()
-# #         mean_mse = df['MSE'].mean()
-# #         # Store the mean values in the dictionary
-# #         data[elem]['Correlation'] = mean_corr
-# #         data[elem]['MSE'] = mean_mse
-            
-# #     # Convert the dictionary to DataFrame
-# #     one_group_df = pd.DataFrame(data)
-    
-# #     # Save the DataFrame to a TSV file
-# #     one_group_df.to_csv(f"../external/BMR/output/GroupImportance/eMET/{category}/GBM/mean_MSE_Corr_{category}.tsv", sep="\t")
-    
-# #     # Extract correlation values from the dataframes
-# #     one_group_corr = one_group_df.loc['Correlation']
-# #     full_model_corr = full_model_df.loc['corr_GBM']
-    
-# #     # Create a dataframe to store the ratios
-# #     ratios_df = pd.DataFrame(columns=["Element", "Ratio"])
-    
-# #     # Calculate and store the ratios for each element type
-# #     for element in one_group_corr.index:
-# #         if element in full_model_corr.index:
-# #             ratio = one_group_corr[element] / full_model_corr[element]
-# #             ratios_df.loc[len(ratios_df)] = [element, ratio]
-           
-# #     # Save the ratios to a new TSV file
-# #     ratios_df.to_csv(f"../external/BMR/output/GroupImportance/eMET/{category}/GBM/importanceRatios_{category}.tsv", sep="\t", index=False)
+    path_ann_pcawg_IDs = '../external/BMR/procInput/ann_PCAWG_ID_complement.csv'
+    sim_file = 'configs/rate_based/sim_setting.ini'
 
+    sim_setting = load_sim_settings(sim_file)
 
-# # ###############################################################################
-# categories = [ 'nucleotide content', 'DNA_accessibility', 'HiC', 
-#               'Epigenetic_mark', 'RNA_expression', 'Replication_timing',
-#               'conservation']
-
-
-# full_model_df = pd.read_csv("../external/BMR/output/TL/GBM/GBM_ensemble_bootstraps100_assessment.tsv", 
-#                             sep=",", index_col=0, skipinitialspace=True)
+    X_regLmnt, Y_regLmnt = load_regulatory_elems(sim_setting)
 
 
 
-# for category in categories:
+
+    drivers = get_identified_drivers(path_ann_pcawg_IDs, based_on = 'all')
+    sim_base_dir = sim_setting['base_dir']
+
+    models = sim_setting['models']
+    model_name = list(models.keys())[0]
+    m = models[model_name]
+    # name = m['save_name']
+    gbm_hyperparams = m['Args']
+    Nr_pair_acc = sim_setting['Nr_pair_acc']
     
-    
+    categories = [ 'nucleotide content', 'DNA_accessibility', 'HiC', 'Epigenetic_mark', 'RNA_expression', 'Replication_timing', 'conservation']
+
+    for feature_category in categories:
         
-#     path_one_group = f'../external/BMR/output/eMET_GroupImportance/{category}/GBM/GBM_ensemble_bootstraps100_assessment.tsv'
-     
-#     one_group_df = pd.read_csv(path_one_group, sep="\t", index_col=0)
-    
-#     # Extract correlation values from the dataframes
-#     one_group_corr = one_group_df.loc['corr_GBM']
-#     full_model_corr = full_model_df.loc['corr_GBM']
-    
-#     # Create a dataframe to store the ratios
-#     ratios_df = pd.DataFrame(columns=["Element", "Ratio"])
-    
-#     # Calculate and store the ratios for each element type
-#     for element in one_group_corr.index:
-#         if element in full_model_corr.index:
-#             ratio = one_group_corr[element] / full_model_corr[element]
-#             ratios_df.loc[len(ratios_df)] = [element, ratio]
+        print(feature_category)
+        
+        
+        
+        
+        config_save_eMET(sim_file, feature_category)
+        
+        ftrs = get_features_category(category= [feature_category])
+        
+        X_regLmnt_ftrs = X_regLmnt.loc[:, ftrs]
+        print(X_regLmnt_ftrs.shape)
+        
+        base_dir = f'{sim_base_dir}{feature_category}'
+        
+        save_path_model = f'{base_dir}/{model_name}/'
+        gbm_hyperparams['path_save'] = f'{save_path_model}models_interval/'
+        
+        if feature_category == 'nucleotide content':
+            feature_category_name = 'nucleotideContext'
+        else:
+           feature_category_name = feature_category
            
-#     # Save the ratios to a new TSV file
-#     ratios_df.to_csv(f"../external/BMR/output/eMET_GroupImportance/{category}/GBM/importanceRatios_{category}.tsv", sep="\t", index=False)
+        path_intergenic_model = path_pretrained_model.replace('feature_group', feature_category_name)
+        
+        pred_ensemble_bootstraps, n_runs_per_pred = fit_per_element_bootstrap_gbm(X_regLmnt_ftrs, Y_regLmnt, drivers, gbm_hyperparams, 
+                                          n_bootstrap, path_intergenic_model,
+                                          transferlearning = True, save_model=True)
+        obs_rates = Y_regLmnt.nMut/(Y_regLmnt.length*Y_regLmnt.N)
+        obs_pred_rates = pd.concat([obs_rates, pred_ensemble_bootstraps], axis=1)
+        obs_pred_rates = pd.concat([obs_pred_rates, n_runs_per_pred], axis=1)
+        obs_pred_rates.columns = ['obs_rates', 'pred_rates', 'n_runs_per_pred']
+        obs_pred_rates['n_runs_per_pred'] = obs_pred_rates['n_runs_per_pred'].fillna(0)
+        
+        os.makedirs(f'{base_dir}/{model_name}/', exist_ok=True)
+        obs_pred_rates.to_csv(f'{base_dir}/{model_name}/{model_name}_{n_bootstrap}_predTest.tsv', sep = '\t')
+        
+        assessment = assess_model(obs_pred_rates.pred_rates, obs_pred_rates.obs_rates, 
+                      Nr_pair_acc, model_name, per_element=True)
+        
+        assessment.to_csv(f'{base_dir}/{model_name}/{model_name}_ensemble_bootstraps{n_bootstrap}_assessment.tsv', sep = '\t')
 
 
-# ###############################################################################
-# all_ratio_dfs = pd.DataFrame(columns=["Element", "Ratio", "feature_category"])
-# for category in categories:
+def save_importance_ratio_dfs(sim_setting, path_full_model_eMET):
     
-#     ratio_df = pd.read_csv(f"../external/BMR/output/eMET_GroupImportance/{category}/GBM/importanceRatios_{category}.tsv", sep="\t")
-#     ratio_df["feature_category"] = category
+    categories = [ 'nucleotide content', 'HiC', 
+                  
+                  'conservation'] #'DNA_accessibility', 'Epigenetic_mark', 'RNA_expression', 'Replication_timing',
+    sim_base_dir = sim_setting['base_dir']
+    models = sim_setting['models']
+    model_name = list(models.keys())[0]
     
-#     all_ratio_dfs = pd.concat([all_ratio_dfs, ratio_df], axis = 0)
-
-# all_ratio_dfs.to_csv("../external/BMR/output/eMET_GroupImportance/importanceRatios.csv", sep=",")   
+    full_model_df = pd.read_csv(path_full_model_eMET, 
+                                sep=",", index_col=0, skipinitialspace=True)
+        
+    for category in categories:
+                   
+        base_dir = f'{sim_base_dir}{category}'
+        
+            
+        path_one_group_ass = f'{base_dir}/{model_name}/{model_name}_ensemble_bootstraps{n_bootstrap}_assessment.tsv'
+         
+        one_group_df = pd.read_csv(path_one_group_ass, sep="\t", index_col=0)
+        
+        corr_model = f'corr_{model_name}'
+        
+        # Extract correlation values from the dataframes
+        one_group_corr = one_group_df.loc[corr_model]
+        full_model_corr = full_model_df.loc[corr_model]
+        
+        # Create a dataframe to store the ratios
+        ratios_df = pd.DataFrame(columns=["Element", "Ratio"])
+        
+        # Calculate and store the ratios for each element type
+        for element in one_group_corr.index:
+            if element in full_model_corr.index:
+                ratio = one_group_corr[element] / full_model_corr[element]
+                ratios_df.loc[len(ratios_df)] = [element, ratio]
+               
+        # Save the ratios to a new TSV file
+        ratios_df.to_csv(f'{base_dir}/{model_name}/{model_name}importanceRatios_{category}.tsv', sep="\t", index=False)
+        
+    ###############################################################################
+    all_ratio_dfs = pd.DataFrame(columns=["Element", "Ratio", "feature_category"])
+    
+    for category in categories:
+        
+        ratio_df = pd.read_csv(f'{base_dir}/{model_name}/{model_name}importanceRatios_{category}.tsv', sep="\t")
+        ratio_df["feature_category"] = category
+        
+        all_ratio_dfs = pd.concat([all_ratio_dfs, ratio_df], axis = 0)
+        
+    all_ratio_dfs.to_csv("{sim_base_dir}/importanceRatios.csv", sep=",")   
