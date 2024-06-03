@@ -96,8 +96,7 @@ def assess_model(Y_pred, Y_obs, Nr_pair_acc, model_name, per_element=True):
     
     if per_element:
         elems = ["gc19_pc.cds", "enhancers", "gc19_pc.3utr", "gc19_pc.5utr",
-                 "gc19_pc.promCore", "gc19_pc.ss", "lncrna.ncrna", 
-                 "lncrna.promCore"]
+                 "gc19_pc.promCore", "gc19_pc.ss"] #, "lncrna.ncrna",  "lncrna.promCore"
         if sum(Y_pred.index.str.contains(r'[v]\d')) != 0:
             elems.append("intergenic")
         
