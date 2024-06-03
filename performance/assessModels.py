@@ -79,7 +79,10 @@ def assess_model_element_type(Y_pred, Y_obs, Nr_pair_acc, model_name, elem):
     obs_elem = obs_elem.loc[pred_elem.index]
     
     corr_elem =  calc_corr(pred_elem, obs_elem)
-    acc_elem = calc_Pairs_acc(Nr_pair_acc, obs_elem, pred_elem)
+    if Nr_pair_acc != 0:
+        acc_elem = calc_Pairs_acc(Nr_pair_acc, obs_elem, pred_elem)
+    else:
+        acc_elem = np.nan
     mse_elem = mean_squared_error(obs_elem, pred_elem)
     
     return corr_elem, acc_elem, mse_elem
@@ -113,7 +116,12 @@ def assess_model(Y_pred, Y_obs, Nr_pair_acc, model_name, per_element=True):
     else:
         Y_obs = Y_obs.loc[Y_pred.index]
         corr =  calc_corr(Y_pred, Y_obs)
-        acc = calc_Pairs_acc(Nr_pair_acc, Y_obs, Y_pred)
+        
+        if Nr_pair_acc != 0:
+            acc = calc_Pairs_acc(Nr_pair_acc, Y_obs, Y_pred)
+        else:
+            acc = np.nan
+        
         mse = mean_squared_error(Y_obs, Y_pred)
         results = {'Element': 'train', acc_name: [acc],
                    corr_name: [corr], mse_name: [mse]}
