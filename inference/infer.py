@@ -3,6 +3,7 @@
 Created on Tue Jul  4 18:23:03 2023
 
 @author: Farideh
+dispersion_test, negbinom_test, burden_test, and bh_fdr functions are from DriverPower codes.
 """
 import numpy as np
 import os
