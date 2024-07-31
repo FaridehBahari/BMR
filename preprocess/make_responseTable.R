@@ -4,25 +4,20 @@ library(rtracklayer)
 library(dplyr)
 
 ###############################
-map_muts <- function(gr, path_bed, is_bed6 = F){
+map_muts <- function(gr, path_bed){
   
-  testGE <- import.bed(path_bed)
-  name = testGE$name
-  testGE <- blocks(testGE)
-  if (is_bed6) {
-    names(testGE) = name
-  }
-  lenElement_new <- sum(width(testGE))
+  testGE_gr <- import.bed(path_bed)
   
-  testGE_gr <- unlist(testGE)
+  names(testGE_gr) = testGE_gr$name
+  
   GenomicElement <- unlist(lapply(strsplit(names(testGE_gr), "[::]"), function(x){x[1]}))
   
   lenElement <- width(testGE_gr)
   
   mcols(testGE_gr) <- DataFrame(mcols(testGE_gr), GenomicElement, lenElement)
   
-  callable_GE <- relist(testGE_gr, testGE)
-  
+  callable_GE <- split(testGE_gr, names(testGE_gr))
+  lenElement_new <- sum(width(callable_GE))
   
   ov <- findOverlaps(gr, callable_GE, ignore.strand = TRUE)
   
@@ -54,6 +49,7 @@ map_muts <- function(gr, path_bed, is_bed6 = F){
        lenAllTests = lenElement_new)
   
 }
+
 
 
 create_response <- function(all_elements, n_donors){
@@ -91,9 +87,9 @@ create_response <- function(all_elements, n_donors){
 
 
 
-save_responseTable <- function(gr, path_bed, path_out, save_name, is_bed6){
+save_responseTable <- function(gr, path_bed, path_out, save_name){
   
-  all_elements <- map_muts(gr, path_bed, is_bed6)
+  all_elements <- map_muts(gr, path_bed)
   
   print("************************ mutations mapped to the genomic intervals************************")
   n_donors <- length(unique(gr$D_id))
@@ -124,7 +120,7 @@ path_out <- '../external/BMR/rawInput/responseTabs/'
 save_names = c('reg_elems', 'var_bins', '1M_bins', '100k_bins', '50k_bins', '10k_bins')
 
 for(i in 1:length(path_beds)){
-  save_responseTable(gr, path_beds[i], path_out, save_names[i], is_bed6 = T)
+  save_responseTable(gr, path_beds[i], path_out, save_names[i])
 }
 
 path_out <- '../external/BMR/rawInput/responseTabs_bedtools/'
