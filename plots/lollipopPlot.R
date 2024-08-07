@@ -236,24 +236,30 @@ define_element_type <- function(binID_vector){
   
   s <- strsplit(binID_vector, "[::]")
   GenomicElement <- unlist(lapply(s, function(x){x[1]}))
-  GenomicElement <- unlist(lapply(strsplit(GenomicElement, "[.]"), function(x){x[length(x)]}))
+  GenomicElements <- unlist(lapply(strsplit(GenomicElement, "[.]"), function(x){x[length(x)]}))
   gene_name <- unlist(lapply(s, function(x){x[5]}))
   
-  if (GenomicElement == 'enhancers') {
-    GenomicElement = 'enhancer'
-  } else if (GenomicElement == '3utr') {
-    GenomicElement = "3'UTR"
-  } else if (GenomicElement == '5utr') {
-    GenomicElement = "3'UTR"
-  } else if (GenomicElement == 'cds') {
-    GenomicElement = 'CDS'
-  } else if (GenomicElement == 'promCore') {
-    GenomicElement = 'Core Promoter'
-  } else if (GenomicElement == 'ss') {
-    GenomicElement = 'Splice site'
-  } 
+  GEs <- c()
+  for (GenomicElement in GenomicElements) {
+    if (GenomicElement == 'enhancers') {
+      GenomicElement = 'enhancer'
+    } else if (GenomicElement == '3utr') {
+      GenomicElement = "3'UTR"
+    } else if (GenomicElement == '5utr') {
+      GenomicElement = "3'UTR"
+    } else if (GenomicElement == 'cds') {
+      GenomicElement = 'CDS'
+    } else if (GenomicElement == 'promCore') {
+      GenomicElement = 'Core Promoter'
+    } else if (GenomicElement == 'ss') {
+      GenomicElement = 'Splice site'
+    } 
+    
+    GEs <- c(GEs, GenomicElement)
+  }
   
-  list(GenomicElement, gene_name)
+  
+  list(GEs, gene_name)
   
 }
 
