@@ -73,9 +73,19 @@ def generate_test_train_bootstrapSamples(X_elem, Y_elem, drivers):
 
 
 def run_gbm_transferLearning(loaded_model, X_regLmnt, Y_regLmnt, param):
+    
+    # Reorder the columns of X_regLmnt according to the order in the loaded model
+    model_ftr_names = loaded_model.feature_names  # Get feature names from the loaded model
+    
+    
+
     X_regLmnt, X_valid, Y_regLmnt, Y_valid = train_test_split(X_regLmnt, Y_regLmnt,
                                                         test_size=0.12, 
                                                         shuffle=True)
+    # Ensure that the columns of X_regLmnt match the order of features in the loaded model
+    X_regLmnt = X_regLmnt[model_ftr_names]
+    X_valid = X_valid[model_ftr_names]
+    
     if ((X_regLmnt.index != Y_regLmnt.index).all()):
             ValueError("The index values of X doesnt match the index values of Y.")
     
@@ -127,6 +137,7 @@ def fit_per_element_bootstrap_gbm(X_regLmnt, Y_regLmnt, drivers, gbm_hyperparams
         # Load the pre-trained model on intergenic region
         with open(path_pretrained_model, 'rb') as file:
             loaded_model = pickle.load(file)
+    
     
     elems = ["gc19_pc.ss", "enhancers",
              "gc19_pc.cds", "gc19_pc.promCore",
@@ -384,7 +395,7 @@ def eMET(sim_setting, path_ann_pcawg_IDs, path_pretrained_model, n_bootstrap = 1
      # , 'primates_phastCons46way', 
      # 'primates_phyloP46way', 'vertebrate_phastCons46way'
      ]
-
+    #new_ftrs = []
     columns_to_exclude = [col for col in new_ftrs if col in X_regLmnt.columns]
     X_regLmnt = X_regLmnt.drop(columns=columns_to_exclude, errors='ignore') 
 
@@ -394,7 +405,7 @@ def eMET(sim_setting, path_ann_pcawg_IDs, path_pretrained_model, n_bootstrap = 1
     # X_regLmnt = X_regLmnt[intergenicFeatures]
 
     drivers = get_identified_drivers(path_ann_pcawg_IDs, based_on = 'all')
-
+    print(X_regLmnt.shape)
 
     base_dir = sim_setting['base_dir']
     models = sim_setting['models']
