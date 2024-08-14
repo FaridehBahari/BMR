@@ -12,7 +12,7 @@ sys.path.append('models/')
 from readFtrs_Rspns import read_response
 from scipy.stats import spearmanr
 import numpy as np
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 
 from tensorflow.keras.models import load_model
@@ -84,8 +84,9 @@ def assess_model_element_type(Y_pred, Y_obs, Nr_pair_acc, model_name, elem):
     else:
         acc_elem = np.nan
     mse_elem = mean_squared_error(obs_elem, pred_elem)
+    mae_elem = mean_absolute_error(obs_elem, pred_elem)
     
-    return corr_elem, acc_elem, mse_elem
+    return corr_elem, acc_elem, mse_elem, mae_elem
     
 
 def assess_model(Y_pred, Y_obs, Nr_pair_acc, model_name, per_element=True):
@@ -93,6 +94,7 @@ def assess_model(Y_pred, Y_obs, Nr_pair_acc, model_name, per_element=True):
     acc_name = f"acc_{model_name}"
     mse_name = f"mse_{model_name}"
     corr_name  = f"corr_{model_name}"
+    mae_name = f"made_{model_name}"
     
     if per_element:
         elems = ["gc19_pc.cds", "enhancers", "gc19_pc.3utr", "gc19_pc.5utr",
@@ -102,14 +104,16 @@ def assess_model(Y_pred, Y_obs, Nr_pair_acc, model_name, per_element=True):
         
         results = []
         for elem in elems:
-            corr_elem, acc_elem, mse_elem = assess_model_element_type(Y_pred, 
+            corr_elem, acc_elem, mse_elem, mae_elem = assess_model_element_type(Y_pred, 
                                                                       Y_obs, Nr_pair_acc,
                                                                       model_name,
                                                                       elem)
             
             results.append({'Element': elem, acc_name : acc_elem,
                             corr_name : corr_elem, 
-                            mse_name : mse_elem})
+                            mse_name : mse_elem,
+                            mae_name: mae_elem})
+            
         performances = pd.DataFrame(results).set_index('Element').pivot_table(index=None, columns='Element')
         
     else:
@@ -122,8 +126,11 @@ def assess_model(Y_pred, Y_obs, Nr_pair_acc, model_name, per_element=True):
             acc = np.nan
         
         mse = mean_squared_error(Y_obs, Y_pred)
+        mae = mean_absolute_error(Y_obs, Y_pred)
+        
         results = {'Element': 'train', acc_name: [acc],
-                   corr_name: [corr], mse_name: [mse]}
+                   corr_name: [corr], mse_name: [mse],
+                   mae_name: [mae]}
         performances = pd.DataFrame(results).set_index('Element').pivot_table(index=None, columns='Element')
     
     return performances
@@ -143,9 +150,9 @@ def assess_models(sim_setting):
     Y_obs_all_intergenic = read_obs(path_Y_train, remove_unMutated)
     Y_obs_all_elems = read_obs(path_Y_test, remove_unMutated)
     
-    acc_all = []
-    corr_all = []
-    mse_all = []
+    # acc_all = []
+    # corr_all = []
+    # mse_all = []
     
     for key in models:
         m = models[key]
@@ -189,19 +196,19 @@ def assess_models(sim_setting):
         
         assessments.to_csv(f'{base_dir}/{save_name}/{save_name}_assessments.tsv', sep='\t')
         
-        acc_all.append(assessments.loc['acc_'+save_name])
-        corr_all.append(assessments.loc['corr_'+save_name])
-        mse_all.append(assessments.loc['mse_'+save_name])
+        # acc_all.append(assessments.loc['acc_'+save_name])
+        # corr_all.append(assessments.loc['corr_'+save_name])
+        # mse_all.append(assessments.loc['mse_'+save_name])
         
         print("=========================")
     
-    acc_all_df = pd.concat(acc_all, axis=1)
-    corr_all_df = pd.concat(corr_all, axis=1)
-    mse_all_df = pd.concat(mse_all, axis=1)
+    # acc_all_df = pd.concat(acc_all, axis=1)
+    # corr_all_df = pd.concat(corr_all, axis=1)
+    # mse_all_df = pd.concat(mse_all, axis=1)
     
-    acc_all_df.to_csv(f'{base_dir}/acc_all.tsv', sep='\t')
-    corr_all_df.to_csv(f'{base_dir}/corr_all.tsv', sep='\t')
-    mse_all_df.to_csv(f'{base_dir}/mse_all.tsv', sep='\t')
+    # acc_all_df.to_csv(f'{base_dir}/acc_all.tsv', sep='\t')
+    # corr_all_df.to_csv(f'{base_dir}/corr_all.tsv', sep='\t')
+    # mse_all_df.to_csv(f'{base_dir}/mse_all.tsv', sep='\t')
     
 
         
