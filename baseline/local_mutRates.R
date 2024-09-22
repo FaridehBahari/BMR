@@ -1,21 +1,42 @@
 ######################## strategy number 1 ###################################
 # just extend each block to 100kb window
 rm(list = ls())
-setwd('C:/Active/projects/make_features/BMR/')
+# setwd('C:/Active/projects/make_features/BMR/')
 library(GenomicRanges)
 library(rtracklayer)
 library(dplyr)
 library(data.table)
-###############################
 
-path_bed <- '../external/database/bins/proccessed/PCAWG_callable.bed6'
-win_size <- 50000
-this_genome <- BSgenome.Hsapiens.UCSC.hg19::Hsapiens
 
-gr_elements <- import.bed(path_bed)
-gr_elements$PCAWG_ID <- gr_elements$name
-gr_elements$name <- paste0('ele', 1:length(gr_elements) )
-
+select_cohort <- function(path_donorInfo, 
+                          cohort, exclude_lymph_melanoma = TRUE,
+                          exclude_hyper_mutated = TRUE){
+  
+  donorInfo <- fread(path_donorInfo)
+  
+  if (exclude_lymph_melanoma) {
+    exceptions <- c("Skin-Melanoma", "SKCM-US",
+                    "Lymph-NOS", 
+                    "Lymph-CLL", "CLLE-ES",
+                    "Lymph-BNHL", "MALY-DE", "DLBC-US")
+    donorInfo <- donorInfo[-which(donorInfo$cohort1 %in% exceptions),] # 2279 donors
+  }
+  
+  if (exclude_hyper_mutated) {
+    donorInfo <- donorInfo[which(!donorInfo$HyperMut_donor),] 
+  }
+  
+  if (!cohort %in% c('Pan_Cancer', 'Pancan-no-skin-melanoma-lymph')) {
+    donorInfo <- donorInfo[which(donorInfo$cohort1 == cohort),]
+  } 
+  
+  donorInfo <- donorInfo[,c("D_id","freq" )]
+  colnames(donorInfo) <- c('donor_id', 'totalMutNrs')
+  donorInfo
+  
+  
+  
+}
 
 create_downstream_background = function(gr_elements, win_size, this_genome) {
   
@@ -149,221 +170,127 @@ create_response <- function(all_elements, n_donors){
   return(resTab)
 }
 
+#################### prepare input ###########
+path_bed <- '../external/database/bins/proccessed/PCAWG_callable.bed6'
+win_size <- 50000
+this_genome <- BSgenome.Hsapiens.UCSC.hg19::Hsapiens
+
+gr_elements <- import.bed(path_bed)
+gr_elements$PCAWG_ID <- gr_elements$name
+gr_elements$name <- paste0('ele', 1:length(gr_elements) )
 
 
-#### bg number1 ####
+
+#### create background bed ####
 gr_background_ds = create_downstream_background(gr_elements, win_size, this_genome)
 gr_background_us = create_upstream_background(gr_elements, win_size, this_genome)
 
 bg_bed <- c(gr_background_ds, gr_background_us)
-
-
 ######### annotate muts ##########
+dir.create('../external/BMR/output/Res_reviewerComments/baseLine_localRates/input/', recursive=T)
+load('../../iDriver/extdata/procInput/mut_PCAWG/all_samples.RData')
 
-load('../../iDriver/extdata/procInput/mut_PCAWG/pan_cancer_FILTEREDsamples.RData')
+path_donorInfo <- '../../iDriver/extdata/procInput/iDriverInputs/donorInfo.tsv'
 
-all_elements <- map_muts(gr, bg_bed)
+# cohort <- 'Pancan-no-skin-melanoma-lymph'
 
-n_donors <- length(unique(gr$D_id))
-resTab <- create_response(all_elements, n_donors)
-
-ele_PCAWGs = data.frame('background' = gr_elements$name,
-                        'PCAWG_ID' = gr_elements$PCAWG_ID, 
-                        'length_PCAWG_ID' = width(gr_elements))
-
-final_resTab = left_join(resTab, ele_PCAWGs, by = c('binID' = 'background'))
-colnames(final_resTab)[1] = 'background_id'
-fwrite(final_resTab, file = '../external/BMR/output/Res_reviewerComments/baseLine_localRates/input/responseTable_all100k.tsv', sep = '\t')
-
-##### assesments bg1 ####
-final_resTab <- fread('../external/BMR/output/Res_reviewerComments/baseLine_localRates/input/responseTable_all100k.tsv')
-
-test_y <- fread('../../iDriver/extdata/procInput/BMRs/observed/Pancan-no-skin-melanoma-lymph/test_y.tsv')
-test_y$obsRate <- test_y$nMut/test_y$length
-
-# obs <- test_y[which(test_y$binID == 'gc19_pc.3utr::gencode::AL627309.1::ENSG00000237683.5'),]
-# x = df[which(df$PCAWG_ID == 'gc19_pc.3utr::gencode::AL627309.1::ENSG00000237683.5'),]
-# 
-# total_length = sum(x$length_PCAWG_ID)
-# weights <- x$length_PCAWG_ID/total_length
-# 
-# rates <- x$nMut/x$length
-# pred_elem <- sum(weights*rates)/length(rates)
-# obs_elem = obs$nMut/obs$length
+cohorts <- c('Pancan-no-skin-melanoma-lymph', "Liver-HCC" ,
+              "Bladder-TCC", "ColoRect-AdenoCA", "Lymph-BNHL",
+              "Uterus-AdenoCA", "Kidney-RCC", "Lymph-CLL", "Lung-SCC",
+              "Stomach-AdenoCA", "Skin-Melanoma", "Panc-Endocrine", "Head-SCC",
+              "Breast-AdenoCa","Biliary-AdenoCA", "Eso-AdenoCa", "CNS-GBM",
+              "Panc-AdenoCA", "Lung-AdenoCA", "Prost-AdenoCA", "Ovary-AdenoCA",
+              "Thy-AdenoCA", "Myeloid-MPN", "Bone-Leiomyo",
+              "CNS-Medullo", "CNS-Oligo", "Cervix-SCC",
+              "CNS-PiloAstro", "Kidney-ChRCC", "Bone-Osteosarc",
+              "Breast-LobularCa",  "Lymph-NOS", "Myeloid-AML", "Bone-Epith",
+              "Cervix-AdenoCA","Breast-DCIS","Bone-Cart" #,"Myeloid-MDS"
+) 
 
 
-obs_tab <- test_y[,c('binID', 'obsRate')]
-df <- left_join(final_resTab, obs_tab, by = c('PCAWG_ID' = 'binID'))
-
-# Efficient calculation using dplyr
-results <- df %>%
-  group_by(PCAWG_ID) %>%
-  summarise(
-    total_length = sum(length_PCAWG_ID),
-    rates = nMut / length,
-    pred_elem = sum((length_PCAWG_ID / sum(length_PCAWG_ID)) * rates) / n(),
-    obs_elem = unique(obsRate)
-  ) %>%
-  ungroup()
-
-results2 <- results[,c('PCAWG_ID', 'total_length', 'pred_elem', 'obs_elem')]
-results2 <- results2[!duplicated(results2),]
-results2 <- results2[which(results2$obs_elem != 0),]
-
-define_element_type <- function(binID_vector){
+for (cohort in cohorts) {
   
-  s <- strsplit(binID_vector, "[::]")
-  GenomicElement <- unlist(lapply(s, function(x){x[1]}))
-  GenomicElement
+  print(cohort)
   
-}
-
-results2$elemType <- define_element_type(results2$PCAWG_ID)
-
-elems <- unique(results2$elemType)
-
-corrs <- c()
-for (elemType in elems) {
-  elem <- results2[which(results2$elemType == elemType),]
-  corrs <- c(corrs, cor(elem$obs_elem, elem$pred_elem, method = 'spearman'))
-}
-
-ass <- data.frame('bg1' = corrs, 'element-type' = elems)
-
-
-
-get_identified_drivers <- function(path_ann_pcawg_IDs, based_on) {
+  exclude_lymph_melanoma <- ifelse(cohort == 'Pancan-no-skin-melanoma-lymph', T, F)
+  donorInfo <- select_cohort(path_donorInfo,
+                             cohort,
+                             exclude_lymph_melanoma,
+                             exclude_hyper_mutated = T)
   
-  # Load the CSV file into a DataFrame
-  df <- fread(path_ann_pcawg_IDs)
+  gr_cohort <- gr[which(gr$D_id %in% donorInfo$donor_id)]
+  all_elements <- map_muts(gr_cohort, bg_bed)
   
-  if (based_on == "all") {
-    # Filter rows where at least one of the specified columns is TRUE
-    filtered_df <- df[which(df$in_CGC | df$in_CGC_literature | df$in_CGC_new | df$in_oncoKB | df$in_pcawg), ]
-  } else if (based_on == "in_pcawg") {
-    # Filter rows where in_pcawg is TRUE
-    filtered_df <- df[df$in_pcawg, ]
+  n_donors <- length(unique(gr_cohort$D_id))
+  resTab <- create_response(all_elements, n_donors)
+  
+  ele_PCAWGs = data.frame('background' = gr_elements$name,
+                          'PCAWG_ID' = gr_elements$PCAWG_ID, 
+                          'length_PCAWG_ID' = width(gr_elements))
+  
+  final_resTab = left_join(resTab, ele_PCAWGs, by = c('binID' = 'background'))
+  colnames(final_resTab)[1] = 'background_id'
+  fwrite(final_resTab, file = paste0('../external/BMR/output/Res_reviewerComments/baseLine_localRates/input/',
+                                     cohort, '_responseTable_all100k.tsv'), sep = '\t')
+  
+  ##### assesments bg1 ####
+  test_y <- fread(paste0('../../iDriver/extdata/procInput/BMRs/observed/', cohort,
+                         '/test_y.tsv'))
+  test_y$obsRate <- test_y$nMut/test_y$length
+  
+  # obs <- test_y[which(test_y$binID == 'gc19_pc.3utr::gencode::AL627309.1::ENSG00000237683.5'),]
+  # x = df[which(df$PCAWG_ID == 'gc19_pc.3utr::gencode::AL627309.1::ENSG00000237683.5'),]
+  # 
+  # total_length = sum(x$length_PCAWG_ID)
+  # weights <- x$length_PCAWG_ID/total_length
+  # 
+  # rates <- x$nMut/x$length
+  # pred_elem <- sum(weights*rates)/length(rates)
+  # obs_elem = obs$nMut/obs$length
+  
+  
+  obs_tab <- test_y[,c('binID', 'obsRate')]
+  df <- left_join(final_resTab, obs_tab, by = c('PCAWG_ID' = 'binID'))
+  df$nMut = as.numeric( df$nMut)
+  df$length = as.numeric( df$length)
+  df$length_PCAWG_ID = as.numeric(df$length_PCAWG_ID)
+  
+  # Efficient calculation using dplyr
+  results <- df %>%
+    group_by(PCAWG_ID) %>%
+    summarise(
+      total_length = sum(length_PCAWG_ID),
+      rates = nMut / length,
+      pred_elem = sum((length_PCAWG_ID / sum(length_PCAWG_ID)) * rates) / n(),
+      obs_elem = unique(obsRate)
+    ) %>%
+    ungroup()
+  
+  results2 <- results[,c('PCAWG_ID', 'total_length', 'pred_elem', 'obs_elem')]
+  results2 <- results2[!duplicated(results2),]
+  results2 <- results2[which(results2$obs_elem != 0),]
+  
+  define_element_type <- function(binID_vector){
+    
+    s <- strsplit(binID_vector, "[::]")
+    GenomicElement <- unlist(lapply(s, function(x){x[1]}))
+    GenomicElement
+    
   }
   
-  # Select the 'PCAWG_IDs' column from the filtered DataFrame
-  drivers <- filtered_df$PCAWG_IDs
+  results2$elemType <- define_element_type(results2$PCAWG_ID)
   
-  return(drivers)
-}
-
-
-drivers <- get_identified_drivers('../external/BMR/procInput/ann_PCAWG_ID_complement.csv', 'all')
-
-results2 <- results2[which(!results2$PCAWG_ID %in% drivers),]
-
-####################### edited Strategy number 1 (bg1.1) ######################
-# need to be corrected
-rm(list = ls())
-setwd('C:/Active/projects/make_features/BMR/')
-library(GenomicRanges)
-library(rtracklayer)
-
-
-path_bed <- '../external/database/bins/proccessed/PCAWG_callable.bed6'
-win_size <- 100000
-
-
-gr_elements <- import.bed(path_bed)
-
-# gr_extended <- resize(gr_elements, width = width(gr_elements) + 100000, fix = "center")
-# gr_split <- split(gr_extended, gr_extended$name)
-gr_split <- resize(gr_elements, width = width(gr_elements) + 100000, fix = "center")
-gr_split <- split(gr_split, gr_split$name)
-
-library(doParallel)
-library(foreach)
-
-
-num_cores <- 20  # Use one less than the total number of cores
-registerDoParallel(num_cores)
-
-t0 = Sys.time()
-# Step 3: Parallelize the loop using foreach
-filtered_bg <- foreach(i = 1:length(gr_split), .combine = c, .packages = "GenomicRanges") %dopar% {
-  if (i %% 5000 == 0) {
-    print(i)
+  elems <- unique(results2$elemType)
+  
+  corrs <- c()
+  for (elemType in elems) {
+    elem <- results2[which(results2$elemType == elemType),]
+    corrs <- c(corrs, cor(elem$obs_elem, elem$pred_elem, method = 'spearman'))
   }
   
-  gr_elem <- gr_elements[which(gr_elements$name == names(gr_split)[i])]
+  ass <- data.frame('baseline_corr' = corrs, 'element-type' = elems)
+  fwrite(ass, file = paste0('../external/BMR/output/Res_reviewerComments/baseLine_localRates/',
+                            cohort, '_baselineAssessment.tsv'), sep = '\t')
   
-  # Remove overlaps within each element
-  filtered_bg_gr <- GenomicRanges::setdiff(gr_split[[i]], gr_elem)
-  filtered_bg_gr$name <- unique(gr_elem$name)
-  
-  return(filtered_bg_gr)
 }
 
-
-print(filtered_bg)
-
-print(Sys.time() - t0)
-
-# filtered_bg <- GRanges()
-# for (i in 1:length(gr_split)) {
-#   if (i%%5000 == 0) {
-#     print(i)
-#   }
-#   gr_elem <- gr_elements[which(gr_elements$name == names(gr_split)[i])]
-#   
-#   # Remove overlaps within each element
-#   filtered_bg_gr = GenomicRanges::setdiff(gr_split[[i]], gr_elem)
-#   filtered_bg_gr$name <- unique(gr_elem$name)
-#   filtered_bg <- c(filtered_bg, filtered_bg_gr)
-# }
-
-load('../../iDriver/extdata/procInput/mut_PCAWG/pan_cancer_FILTEREDsamples.RData')
-bg_bed <- filtered_bg
-bg_bed$PCAWG_ID <- bg_bed$name
-bg_bed$name <- paste0('ele', 1:length(bg_bed))
-
-t0 <- Sys.time()
-all_elements <- map_muts(gr, bg_bed)
-print(paste0('map_muts total time: ', Sys.time() - t0))
-
-n_donors <- length(unique(gr$D_id))
-
-t0 <- Sys.time()
-resTab <- create_response(all_elements, n_donors)
-print(paste0('create_response total time: ', Sys.time() - t0))
-
-resTab
-
-df <- data.frame('PCAWG_ID' = bg_bed$PCAWG_ID,
-                 'elem_ID' = bg_bed$name)
-df2 = data.frame('PCAWG_ID' = gr_elements$name, 'PCAWG_block_length' = width(gr_elements))
-df <- left_join(df, df2, by = 'PCAWG_ID')
-
-pred_tab <- left_join(resTab, df, by = c('binID'= 'elem_ID'))
-
-fwrite(pred_tab, file = '../external/BMR/output/Res_reviewerComments/baseLine_localRates/input/background_responseTab_mainElement_filtered_s1.1.tsv', sep = '\t')
-
-########################## Strategy number 2 #############
-# # extend each block and remove all pcawg elements from the extenxions:
-# 
-# cut -f1,2 ../../../../Projects/bahari_work/database/fasta/hg19.fa.fai > hg19.genome
-# 
-# bedtools slop -i ../external/database/bins/proccessed/PCAWG_callable.bed6 -g ../../../../Projects/bahari_work/database/fasta/hg19.fa -b 50000 > ../external/BMR/output/Res_reviewerComments/baseLine_localRates/callable_pcawg.bed
-# 
-# 
-# bedtools subtract -a ../external/BMR/output/Res_reviewerComments/baseLine_localRates/extended_callable_pcawg.bed -b ../
-#   external/database/bins/raw/PCAWG_test_genomic_elements.bed6 > ../external/BMR/output/Res_reviewerComments/baseLine_localRates/extended_pcawgFiltered.bed
-
-rm(list = ls())
-library(GenomicRanges)
-library(rtracklayer)
-
-path_bed <- '../external/BMR/output/Res_reviewerComments/baseLine_localRates/input/extended_pcawgFiltered.bed'
-
-bg_bed2 <-  import.bed(path_bed)
-bg_bed2$PCAWG_ID <- bg_bed2$name
-bg_bed2$name <- paste0('ele', 1:length(bg_bed2))
-
-load('../../iDriver/extdata/procInput/mut_PCAWG/pan_cancer_FILTEREDsamples.RData')
-all_elements2 <- map_muts(gr, bg_bed2)
-
-resTab2 <- create_response(all_elements2, n_donors)
