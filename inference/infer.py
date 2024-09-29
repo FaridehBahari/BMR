@@ -121,7 +121,10 @@ def bh_fdr(pvals):
 def find_param_ini(directory_path, cancer_type = None):
     
     if cancer_type != None:
-        setting_config = f'sim_setting_iDriver_{cancer_type}.ini'
+        if cancer_type == 'Pancan-no-skin-melanoma-lymph':
+            setting_config = 'sim_setting_iDriver.ini'
+        else:
+            setting_config = f'sim_setting_iDriver_{cancer_type}.ini'
     else:
         setting_config = 'sim_setting.ini'
     
@@ -152,7 +155,10 @@ def get_pred_path(directory_path, save_name):
 def perform_burdenTest(dir_path, cancer_type = None):
     
     if cancer_type != None:
-        setting_config = f'sim_setting_iDriver_{cancer_type}.ini'
+        if cancer_type == 'Pancan-no-skin-melanoma-lymph':
+            setting_config = 'sim_setting_iDriver.ini'
+        else:
+            setting_config = f'sim_setting_iDriver_{cancer_type}.ini'
         param_config = find_param_ini(dir_path, cancer_type)
     else:
         setting_config = 'sim_setting.ini'
