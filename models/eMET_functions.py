@@ -432,14 +432,14 @@ def eMET(sim_setting, path_ann_pcawg_IDs, path_pretrained_model, n_bootstrap = 1
     obs_rates = Y_regLmnt.nMut/(Y_regLmnt.length*Y_regLmnt.N)
     obs_pred_rates = pd.concat([obs_rates, pred_ensemble_bootstraps], axis=1)
     obs_pred_rates = pd.concat([obs_pred_rates, n_runs_per_pred], axis=1)
-    obs_pred_rates.columns = ['obs_rates', 'pred_rates', 'n_runs_per_pred']
+    obs_pred_rates.columns = ['obs_rates', 'predRate', 'n_runs_per_pred']
     obs_pred_rates['n_runs_per_pred'] = obs_pred_rates['n_runs_per_pred'].fillna(0)
 
 
     os.makedirs(f'{base_dir}/{model_name}/', exist_ok=True)
     obs_pred_rates.to_csv(f'{base_dir}/{model_name}/{model_name}_{n_bootstrap}_predTest.tsv', sep = '\t')
 
-    assessment = assess_model(obs_pred_rates.pred_rates, obs_pred_rates.obs_rates, 
+    assessment = assess_model(obs_pred_rates.predRate, obs_pred_rates.obs_rates, 
                   Nr_pair_acc, model_name, per_element=True)
 
     assessment.to_csv(f'{base_dir}/{model_name}/{model_name}_ensemble_bootstraps{n_bootstrap}_assessment.tsv', sep = '\t')
@@ -522,13 +522,13 @@ def one_group_importance_eMET(sim_file, path_ann_pcawg_IDs, path_pretrained_mode
         obs_rates = Y_regLmnt.nMut/(Y_regLmnt.length*Y_regLmnt.N)
         obs_pred_rates = pd.concat([obs_rates, pred_ensemble_bootstraps], axis=1)
         obs_pred_rates = pd.concat([obs_pred_rates, n_runs_per_pred], axis=1)
-        obs_pred_rates.columns = ['obs_rates', 'pred_rates', 'n_runs_per_pred']
+        obs_pred_rates.columns = ['obs_rates', 'predRate', 'n_runs_per_pred']
         obs_pred_rates['n_runs_per_pred'] = obs_pred_rates['n_runs_per_pred'].fillna(0)
         
         os.makedirs(f'{base_dir}/{model_name}/', exist_ok=True)
         obs_pred_rates.to_csv(f'{base_dir}/{model_name}/{model_name}_{n_bootstrap}_predTest.tsv', sep = '\t')
         
-        assessment = assess_model(obs_pred_rates.pred_rates, obs_pred_rates.obs_rates, 
+        assessment = assess_model(obs_pred_rates.predRate, obs_pred_rates.obs_rates, 
                       Nr_pair_acc, model_name, per_element=True)
         
         assessment.to_csv(f'{base_dir}/{model_name}/{model_name}_ensemble_bootstraps{n_bootstrap}_assessment.tsv', sep = '\t')
