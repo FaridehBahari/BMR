@@ -195,7 +195,7 @@ def perform_burdenTest(dir_path, cancer_type = None):
     
     y['p_value'] = burden_test(count, y.nPred, offset, 'binomial',
                              pval_dispersion, theta, s)
-    y['fdr'] = bh_fdr(y.raw_p_binom)
+    y['fdr'] = bh_fdr(y.p_value)
     
     
     inference_dir = f'{base_dir}/{save_name}/inference/'
