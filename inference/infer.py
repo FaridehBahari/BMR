@@ -118,10 +118,16 @@ def bh_fdr(pvals):
 
 ##############################################
 
-def find_param_ini(directory_path):
+def find_param_ini(directory_path, cancer_type = None):
+    
+    if cancer_type != None:
+        setting_config = f'sim_setting_iDriver_{cancer_type}.ini'
+    else:
+        setting_config = 'sim_setting.ini'
+    
     second_ini = None
     for filename in os.listdir(directory_path):
-        if filename.endswith('.ini') and filename != 'sim_setting.ini':
+        if filename.endswith('.ini') and filename != setting_config:
             second_ini = filename
             break
     return second_ini
@@ -143,9 +149,14 @@ def get_pred_path(directory_path, save_name):
         return base_filename
 
 
-def perform_burdenTest(dir_path):
-    setting_config = 'sim_setting.ini'
-    param_config = find_param_ini(dir_path)
+def perform_burdenTest(dir_path, cancer_type = None):
+    
+    if cancer_type != None:
+        setting_config = f'sim_setting_iDriver_{cancer_type}.ini'
+        param_config = find_param_ini(dir_path, cancer_type)
+    else:
+        setting_config = 'sim_setting.ini'
+        param_config = find_param_ini(dir_path)
     
     print(param_config)
     
@@ -167,6 +178,8 @@ def perform_burdenTest(dir_path):
     # merge the data frames based on their indexes using merge()
     y = pd.merge(Y_obs, Y_pred, left_index=True,
                            right_index=True, how='inner')
+    # Exclude rows where the index contains the 'lncrna' pattern
+    y = y[~y.index.str.contains('lncrna', case=False, na=False)]
     #y['predRate'].isna().sum()
     y['nPred'] = (y.predRate*y.length*y.N)  
     use_gmean = True
@@ -175,14 +188,14 @@ def perform_burdenTest(dir_path):
     #test_method = 'negative_binomial'
     s = 1
     pval_dispersion, theta = dispersion_test(y.nPred, y.nMut, k=100)
-    y['raw_p_nBinom'] = burden_test(count, y.nPred, offset, 'negative_binomial',
-                             pval_dispersion, theta, s)
-    y['raw_q_nBinom'] = bh_fdr(y.raw_p_nBinom)
+    # y['raw_p_nBinom'] = burden_test(count, y.nPred, offset, 'negative_binomial',
+    #                          pval_dispersion, theta, s)
+    # y['raw_q_nBinom'] = bh_fdr(y.raw_p_nBinom)
     
     
-    y['raw_p_binom'] = burden_test(count, y.nPred, offset, 'binomial',
+    y['p_value'] = burden_test(count, y.nPred, offset, 'binomial',
                              pval_dispersion, theta, s)
-    y['raw_q_binom'] = bh_fdr(y.raw_p_binom)
+    y['fdr'] = bh_fdr(y.raw_p_binom)
     
     
     inference_dir = f'{base_dir}/{save_name}/inference/'
@@ -190,58 +203,3 @@ def perform_burdenTest(dir_path):
     y.to_csv(f'{inference_dir + save_name}_inference.tsv',
                       sep='\t')
     print('****************')
-    
-    
-
-
-def perform_burdenTest2(path_pred, path_Y_regLmnts):
-    
-    Y_pred = pd.read_csv(path_pred, sep=',', header=0, index_col='binID')
-    removedElems = Y_pred.index[Y_pred.isnull().any(axis=1)].tolist()
-    
-    print("elements with no prediction:", removedElems)    
-    Y_obs = read_response(path_Y_regLmnts)
-    Y_obs = Y_obs[Y_obs['nMut'] != 0]
-    
-    y = pd.concat([Y_obs, Y_pred], axis=1)
-    # Drop rows with NaN values (elements that are not selected in bootstrap sampling)
-    y = y.dropna()
-    
-    y['nPred'] = (y.pred_rates*y.length*y.N)  
-    use_gmean = True
-    count = np.sqrt(y.nMut * y.nSample) if use_gmean else y.nMut
-    offset = y.length * y.N + 1
-    #test_method = 'negative_binomial'
-    s = 1
-    pval_dispersion, theta = dispersion_test(y.nPred, y.nMut, k=100)
-    y['raw_p_nBinom'] = burden_test(count, y.nPred, offset, 'negative_binomial',
-                             pval_dispersion, theta, s)
-    y['raw_q_nBinom'] = bh_fdr(y.raw_p_nBinom)
-    
-    
-    y['raw_p_binom'] = burden_test(count, y.nPred, offset, 'binomial',
-                             pval_dispersion, theta, s)
-    y['raw_q_binom'] = bh_fdr(y.raw_p_binom)
-    
-    
-    # import os
-    path_save = '/'.join(path_pred.split('/')[0:-1])
-    y.to_csv(f'{path_save}/inference.tsv',
-                      sep='\t')
-    print('****************')    
-
-
-
-
-# dir_paths =  [
-#     # '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/',
-#     #            '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/RF/',
-#     #            '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_poisLoss/',
-#                '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/siamese_cpu/',
-#                '../external/BMR/output/TL/GBM/',
-#                '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/nn_mseLoss/'
-#               ]
-
-# for dir_path in dir_paths:
-#     perform_burdenTest(dir_path)
-
