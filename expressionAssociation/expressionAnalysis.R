@@ -167,7 +167,7 @@ compute_pVal_quassiPois_CN <- function(final_df, Test = 'LRT'){ #Test = 'LRT' or
 }
 
 
-compute_pVal_quassiPois_CN <- function(final_df, Test = 'LRT'){ #Test = 'LRT' or 'F'
+compute_pVal_quassiPois_SCNA <- function(final_df, Test = 'LRT'){ #Test = 'LRT' or 'F'
   # Fit the quasi-Poisson GLM
   glm_model <- glm(FPKM_UQ ~ MUT + SCNA, 
                    data = final_df, 
@@ -199,8 +199,8 @@ donorInfo <- fread(path_donorInfo)
 complete_count_matrix <- as.data.frame(fread(path_FPKM_UQ))
 complete_cn <- fread(path_CN) # colnames are Tumor sample barcode (the column exists in maf data to match with Donor_ids)
 
-candidate <- 'gc19_pc.cds::gencode::POTEE::ENSG00000188219.10'
-cohort <- 'ColoRect-AdenoCA' #'Eso-AdenoCa' #'Liver-HCC'
+candidate <- 'gc19_pc.cds::gencode::SGK1::ENSG00000118515.7'
+cohort <- 'Lymph-BNHL' #'Eso-AdenoCa' #'Liver-HCC'
 cancer_specific_dat <- load_cancer_specific_data(path_donorInfo, cohort, all_mutData, all_sampleInfo)
 
 
@@ -220,3 +220,21 @@ candidate_cn_subset = candidateDat[[2]]
 
 model_data <- generate_data_glm(candidate, cancerSp_mutData, donorInfo, cohort,
                                 candidate_rna_subset, candidate_cn_subset)
+
+final_df = model_data
+Test = 'LRT'
+glm_model <- glm(FPKM_UQ ~ MUT + SCNA, 
+                 data = final_df, 
+                 family = quasipoisson())
+
+# Perform likelihood ratio test to assess the significance of MUT
+# Reduced model without MUT
+glm_model_reduced <- glm(FPKM_UQ ~ SCNA , 
+                         data = final_df, 
+                         family = quasipoisson())
+
+# Likelihood ratio test (using anova)
+lrt <- anova(glm_model_reduced, glm_model, test = Test)
+p_value <- lrt$`Pr(>Chi)`[2]
+x <- summary(glm_model)
+x[["coefficients"]]
