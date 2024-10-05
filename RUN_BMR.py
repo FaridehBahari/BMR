@@ -28,11 +28,7 @@ st_time = time.time()
 sim_setting = load_sim_settings(sim_file)
 config_save(sim_file)
 
-if 'PCA' in sim_setting['path_X_train']  or 'AE' in sim_setting['path_X_train']:
-    X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting, category = [])
-    
-else:
-    X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting)
+X_train, Y_train, X_test, Y_test = load_data_sim(sim_setting, category = [])
 
 print(X_train.shape)
 print(X_test.shape)
