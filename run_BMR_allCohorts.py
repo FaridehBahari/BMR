@@ -3,17 +3,14 @@ import subprocess
 
 # List of cohorts
 # 'Pancan-no-skin-melanoma-lymph', 
-cohorts = [
-    'Pan_Cancer', "Liver-HCC", 
-    "Bladder-TCC", "ColoRect-AdenoCA", "Lymph-BNHL",
-    "Uterus-AdenoCA", "Kidney-RCC", "Lymph-CLL", "Lung-SCC",
+cohorts = ["Liver-HCC", "Bladder-TCC" ,"ColoRect-AdenoCA" , "Lymph-BNHL",
+    "Uterus-AdenoCA" , "Kidney-RCC", "Lymph-CLL", "Lung-SCC",
     "Stomach-AdenoCA", "Skin-Melanoma", "Panc-Endocrine", "Head-SCC",
-    "Breast-AdenoCa", "Biliary-AdenoCA", "Eso-AdenoCa", "CNS-GBM",         
+    "Breast-AdenoCa" , "Biliary-AdenoCA", "Eso-AdenoCa",         
     "Panc-AdenoCA", "Lung-AdenoCA", "Prost-AdenoCA", "Ovary-AdenoCA",
     "Breast-LobularCa", "Thy-AdenoCA", "Myeloid-MPN", "Bone-Leiomyo",    
-    "Lymph-NOS", "CNS-Medullo", "Myeloid-AML", "CNS-Oligo", "Cervix-SCC",
-    "CNS-PiloAstro", "Kidney-ChRCC", "Bone-Epith", "Bone-Osteosarc",
-    "Cervix-AdenoCA", "Breast-DCIS", "Bone-Cart", "Myeloid-MDS"
+    "CNS-GBM", "Panc-AdenoCA" , "Lung-AdenoCA" ,"Prost-AdenoCA",
+    "Ovary-AdenoCA" , "Bone-Leiomyo", "CNS-Medullo","Bone-Osteosarc"
 ]
 
 # Path to the template ini file
