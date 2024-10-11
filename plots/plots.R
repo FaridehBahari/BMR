@@ -552,6 +552,8 @@ DownSampling_linePlot_perModel_allElems <- function(path_ass_DS, ass_type,
     Y_lable = 'Accuracy'
   } else if (ass_type == 'mse') {
     Y_lable = 'MSE'
+  } else if (ass_type == 'made') {
+    Y_lable = 'MAE'
   }
   
   # Extract model from path
@@ -605,7 +607,7 @@ DownSampling_linePlot_perModel_allElems <- function(path_ass_DS, ass_type,
   full_ds50 <- elem_dfs
   
   # Conditionally format the assessment values based on ass_type
-  if (ass_type == 'mse') {
+  if (ass_type == 'mse' | ass_type == 'made') {
     full_ds50$assessment <- scientific(as.numeric(full_ds50$assessment), digits = 3)
   } else {
     full_ds50$assessment <- as.character(round(as.numeric(full_ds50$assessment), 3))
@@ -1736,11 +1738,14 @@ path_ass_DS <- c('../external/BMR/output/with_RepliSeq_HiC/DownSampling/FullSet/
                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS100k/GBM/GBM_assessments.tsv',
                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS50k/GBM/GBM_assessments.tsv')
 
+ass_types = c('corr', 'mse', 'made')
 for (ass_type in ass_types) {
   if (ass_type == 'mse') {
     save_name = 'FigS2_c'
   } else if (ass_type == 'corr') {
     save_name = 'Fig2_c'
+  } else if (ass_type == 'made') {
+    save_name = 'FigS2_d'
   }
   DownSampling_linePlot_perModel_allElems(path_ass_DS, ass_type, save_name =save_name)
   
