@@ -2056,288 +2056,124 @@ p <- p + geom_vline(xintercept = critical_value, color = "red", linetype = "dash
 print(p)
 
 
+############################## tissueSp Ftrs vs all Ftrs #################################
+rm(list = ls())
+
+library(data.table)
+library(ggplot2)
+
+create_method_colours <- function() {
+  
+  c( `NN (MSE loss)` = '#e41a1c' , `NN (Poisson loss)` = '#984ea3', GLM = 'grey',
+     Intergenic = '#386cb0', XGBoost = '#386cb0', `all features` = '#386cb0',
+     `tissue-specific features` = 'lightblue',
+     `Variable-size intergenic` = '#386cb0', `Variable size` = '#386cb0',
+     eMET = '#e41a1c', `element-specific` = '#cecdc9', 
+     RF =  '#4daf4a', 
+     `All features` = '#386cb0',
+     PCA = '#e7d4e8',
+     AE = '#a6dba0',
+     # `Mutated` = '#386cb0', 
+     # `Mutated and unmutated` = 'lightblue',
+     # `Long mutated` = '#e41a1c',
+     # `Long mutated and unmutated` = 'pink',
+     `#mutations >= 1` = '#386cb0', 
+     All = 'lightblue',
+     `#mutations >= 1 & Length > 100` = '#e41a1c',
+     `Length > 100` = 'pink',
+     `10k` = '#d01c8b', `50k` =  '#f1b6da',
+     `100k` = "#b8e186", `1M` = "#4dac26" 
+  )
+  
+}
 
 
+included_cohorts <- c("Liver-HCC", "ColoRect-AdenoCA" ,
+                      "Uterus-AdenoCA" , "Kidney-RCC", "Lung-SCC",
+                      "Stomach-AdenoCA", "Skin-Melanoma", "Panc-Endocrine", "Head-SCC",
+                      "Breast-AdenoCa",
+                      "CNS-GBM", "Panc-AdenoCA" , "Lung-AdenoCA" ,"Prost-AdenoCA",
+                      "Ovary-AdenoCA" , "Bone-Leiomyo", "CNS-Medullo","Bone-Osteosarc")
 
+files <- paste0('../external/BMR/output/Res_reviewerComments/tissueSpFtrs/', included_cohorts, '/GBM/GBM_assessments.tsv')
 
+ass <- lapply(files, fread)
 
+# Add a cohort column to each assessment
+ass <- Map(function(dt, cohort) {
+  dt[, cohort := cohort]
+  return(dt)
+}, ass, included_cohorts)
 
+# Check one of the modified assessments
+all_assessments <- do.call(rbind, ass)
+all_assessments$usedFeatures <- 'tissue-specific features'
+ass <- all_assessments[which(all_assessments$V1 == 'corr_GBM'),]
+ass
 
+files <- paste0('../external/BMR/output/reviewerComments/', included_cohorts, '/GBM/GBM_assessments.tsv')
 
+ass <- lapply(files, fread)
 
+# Add a cohort column to each assessment
+ass <- Map(function(dt, cohort) {
+  dt[, cohort := cohort]
+  return(dt)
+}, ass, included_cohorts)
 
+# Check one of the modified assessments
+all_assessments_base <- do.call(rbind, ass)
+all_assessments_base$usedFeatures <- 'all features'
 
+ass <- rbind(all_assessments_base, all_assessments)
 
+ass_type = 'corr'
+ass_elem <- ass[grepl(ass_type, ass$V1), ]
 
+library(tidyr)
 
+# Reshape data from wide to long format
+ass_elem_long <- melt(ass_elem, 
+                      id.vars = c("V1", "train", "cohort", "usedFeatures"), 
+                      measure.vars = c("enhancers", "gc19_pc.3utr", "gc19_pc.5utr", "gc19_pc.cds", 
+                                       "gc19_pc.promCore", "gc19_pc.ss"), 
+                      variable.name = "element_type", 
+                      value.name = 'ass')
+if (ass_type == 'corr') {
+  Y_label = 'correlation'
+}
 
+element_names <- c('enhancers' = 'Enhancers',
+                   'gc19_pc.3utr' = '3\' UTR',
+                   'gc19_pc.5utr' = '5\' UTR',
+                   'gc19_pc.cds' = 'CDS',
+                   'gc19_pc.promCore' = 'Core Promoter',
+                   'gc19_pc.ss' = 'Splice site'
+                   # , 'lncrna.ncrna' = 'lncRNA',
+                   # 'lncrna.promCore' = 'lncRNA Promoter'
+)
 
-# #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-# ##### fig. bin size effect figures (fixed-window intervals) ##### 
-# #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-# 
-# path_ass_binSizes <- c('../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/GBM_assessments.tsv',
-#                        '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/1M/GBM/GBM_assessments.tsv',
-#                        '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bebedtools_splitted/100k/GBM/GBM_assessments.tsv',
-#                        '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/50k/GBM/GBM_assessments.tsv',
-#                        '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/10k/GBM/GBM_assessments.tsv'
-# )
-# 
-# ass_types <- c('corr', 'mse')
-# save_name = 'splitted'
-# for (ass_type in ass_types) {
-#   
-#   if (ass_type != 'mse') {
-#     grouped_barPlot_model_elements(path_ass_binSizes, ass_type, 
-#                                    compare = 'per_binSize', GBM_name = 'Variable-size intergenic',
-#                                    save_name = save_name)
-#   } else {
-#     grouped_barPlot_model_elements_MSE(path_ass_binSizes, compare = 'per_binSize', 
-#                                        GBM_name = 'Variable-size intergenic',
-#                                        save_name = save_name)
-#   }
-#   
-# }
-# 
-# 
-# binEffect_directory_paths <- c('../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/GBM/rep_train_test/',
-#                                '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splited/1M/GBM/rep_train_test/',
-#                                '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splitted/100k/GBM/GBM_assessments.tsv',
-#                                '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splited/50k/GBM/rep_train_test/',
-#                                '../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/bedtools_splited/10k/GBM/rep_train_test/'
-# )
-# 
-# 
-# for (ass_type in ass_types) {
-#   plot_validation_boxplot(binEffect_directory_paths, ass_type,
-#                           GBM_name = 'Variable-size intergenic',
-#                           compare = 'per_binSize', save_name = save_name) 
-# }
-# 
-# 
-# grouped_barPlot_model_benchmark <- function(driver_based_on, coding_nonCoding,
-#                                             path_save = '../external/BMR/plots/',
-#                                             save_name = ''){
-#   
-#   path_bench_res <- paste0('../external/BMR/benchmark_binomTest/Pancan-no-skin-melanoma-lymph/tables/table_GoldStd_basedon_', driver_based_on, 'fdr.csv')
-#   dir.create(path_save, showWarnings = F, recursive = T)
-#   df <- fread(path_bench_res)
-#   df <- df[which(df$method %in% c("GBM", "RF", "nn_mseLoss", "nn_poisLoss", "TL" )),]
-#   
-#   # Get column indices where "CDS" is present in column names
-#   cds_cols <- grep("CDS", names(df))
-#   
-#   # Split dataframe based on column indices
-#   cds_df <- df[, c(2, cds_cols), with = FALSE]
-#   nc_df <- df[, -cds_cols, with = FALSE]
-#   
-#   colnames(cds_df) <- gsub('CDS_', '', toupper(colnames(cds_df)))
-#   colnames(nc_df) <- gsub('NC_', '', toupper(colnames(nc_df)))
-#   
-#   if (coding_nonCoding == 'coding') {
-#     df = cds_df
-#   } else if(coding_nonCoding == 'non-coding')  {
-#     df = nc_df
-#   }
-#   
-#   df = df[, -c('N_ELEMNTS', 'NTPS', 'NHITS')]
-#   df <- melt(setDT(df), id.vars = "METHOD", c("PRECISIONS", "RECALLS", "F1",
-#                                               "AUC", "AUPR"))
-#   colnames(df) <- c('model', 'metrics', 'value')
-#   
-#   # Order the data first by element and then by decreasing assessment
-#   df <- df %>%
-#     arrange(metrics, desc(model ))
-#   
-#   # Create groups for laying out the barplot correctly
-#   dfs <- df %>%
-#     group_by(metrics) %>%
-#     mutate(id = metrics)
-#   
-#   ggplot(dfs, aes(x = metrics, y = value, fill = model, group = interaction(model, id))) +
-#     geom_bar(stat = "identity", position = "dodge", width = 0.5) +
-#     # coord_polar(start = 0) +  # This turns the barplot into a circular barplot
-#     ylim(min(0, dfs$value), max(1, dfs$value)) + 
-#     theme_minimal() +
-#     theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-#           axis.title.x = element_blank(),
-#           legend.position = "right",
-#           text = element_text(size = 14),
-#           panel.grid = element_blank(), 
-#           axis.line = element_line(colour = "black")) +
-#     scale_fill_manual(values = create_method_colours()) +
-#     labs(title = paste0(coding_nonCoding, ':\ngold standard based on ', based_on),
-#          y = 'value',
-#          x = 'metrics',
-#          fill = "Model")
-#   
-#   ggsave(paste0(coding_nonCoding,"_", driver_based_on, "_grouped_barPlot_model_benchmark", save_name,".png"),
-#          device = "png", width = 10, 
-#          bg = 'white',
-#          path = path_save)
-# }
-# 
-# 
-# precisinRecall_dotPlot <- function(driver_based_on, coding_nonCoding,
-#                                    path_save = '../external/BMR/plots/',
-#                                    save_name = ''){
-#   
-#   path_bench_res <- paste0('../external/BMR/benchmark_binomTest/Pancan-no-skin-melanoma-lymph/tables/table_GoldStd_basedon_', driver_based_on, 'fdr.csv')
-#   dir.create(path_save, showWarnings = F, recursive = T)
-#   df <- fread(path_bench_res)
-#   df <- df[which(df$method %in% c("GBM", "RF", "nn_mseLoss", "nn_poisLoss", "TL" )),]
-#   
-#   # Get column indices where "CDS" is present in column names
-#   cds_cols <- grep("CDS", names(df))
-#   
-#   # Split dataframe based on column indices
-#   cds_df <- df[, c(2, cds_cols), with = FALSE]
-#   nc_df <- df[, -cds_cols, with = FALSE]
-#   
-#   
-#   colnames(cds_df) <- gsub('CDS_', '', toupper(colnames(cds_df)))
-#   colnames(nc_df) <- gsub('NC_', '', toupper(colnames(nc_df)))
-#   
-#   if (coding_nonCoding == 'coding') {
-#     df = cds_df
-#   } else if(coding_nonCoding == 'non-coding')  {
-#     df = nc_df
-#   }
-#   
-#   dfs = df
-#   
-#   dfs$model <- factor(df$METHOD)
-#   coding_nonCoding = 'coding'
-#   ggplot(dfs, aes(x = RECALLS, y = PRECISIONS)) +
-#     geom_point(aes(colour = model)) +
-#     # coord_polar(start = 0) +  # This turns the barplot into a circular barplot
-#     ylim(min(0, dfs$PRECISIONS), max(1, dfs$PRECISIONS)) + 
-#     xlim(min(0, dfs$RECALLS), max(1, dfs$RECALLS)) + 
-#     theme_minimal() +
-#     theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-#           
-#           legend.position = "right",
-#           text = element_text(size = 14),
-#           panel.grid = element_blank(), 
-#           axis.line = element_line(colour = "black")) +
-#     scale_colour_manual(values = create_method_colours()) +
-#     labs(title = paste0(coding_nonCoding, ':\ngold standard based on ', based_on),
-#          x = 'Recall', y = 'Precision'
-#     )
-#   
-#   ggsave(paste0(coding_nonCoding,"_", driver_based_on, "_PrecisionRecall", save_name,".png"),
-#          device = "png", width = 10, 
-#          bg = 'white',
-#          path = path_save)
-# }
-# 
-# 
-# top_100hit_barplot <- function(based_on, coding_nonCoding,
-#                                path_save = '../external/BMR/plots/',
-#                                save_name = ''){
-#   
-#   path_bench_res <- paste0('../external/BMR/benchmark_binomTest/Pancan-no-skin-melanoma-lymph/tables/table_GoldStd_basedon_',
-#                            based_on, 'fixedNumberOfElems.csv')
-#   
-#   dir.create(path_save, showWarnings = F, recursive = T)
-#   df <- fread(path_bench_res)
-#   df <- df[which(df$method %in% c("GBM", "RF", "nn_mseLoss", "nn_poisLoss", "TL" )),]
-#   
-#   # Get column indices where "CDS" is present in column names
-#   cds_cols <- grep("CDS", names(df))
-#   
-#   # Split dataframe based on column indices
-#   cds_df <- df[, c(2, cds_cols), with = FALSE]
-#   nc_df <- df[, -cds_cols, with = FALSE]
-#   
-#   colnames(cds_df) <- gsub('CDS_', '', toupper(colnames(cds_df)))
-#   colnames(nc_df) <- gsub('NC_', '', toupper(colnames(nc_df)))
-#   
-#   if (coding_nonCoding == 'coding') {
-#     df = cds_df
-#   } else if(coding_nonCoding == 'non-coding')  {
-#     df = nc_df
-#   }
-#   
-#   
-#   # Order the data first by element and then by decreasing assessment
-#   df <- df %>%
-#     arrange(METHOD , desc( NTPS))
-#   
-#   
-#   ggplot(df, aes(x = METHOD, y = NTPS, fill = METHOD)) +
-#     geom_bar(stat = "identity", width = 0.5) +
-#     theme_minimal() +
-#     theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-#           legend.position = "right",
-#           text = element_text(size = 14),
-#           panel.grid = element_blank(), 
-#           axis.line = element_line(colour = "black")) +
-#     scale_fill_manual(values = create_method_colours()) +
-#     labs(title = paste0(coding_nonCoding, ':\ngold standard based on ', based_on),
-#          y = 'number of true positives',
-#          x = 'model')
-#   
-#   ggsave(paste0(coding_nonCoding,"_", based_on, "_nTPs_barPlot", save_name,".png"),
-#          device = "png", width = 10, 
-#          bg = 'white',
-#          path = path_save)
-# }
-# 
-# 
-# histogram_perElement_length <- function(path_responseTab_PCAWG,
-#                                         path_save = '../external/BMR/plots/',
-#                                         save_name = ''){
-#   
-#   y <- fread(path_responseTab_PCAWG)
-#   
-#   y$`element type` <- define_element_type(y$binID)
-#   
-#   y <- y[which(!y$`element type` %in% c('lncrna.ncrna', 'lncrna.promCore')), ]
-#   
-#   # Mapping dictionary for element types
-#   element_types <- c('enhancers' = 'Enhancers',
-#                      'gc19_pc.3utr' = '3\' UTR',
-#                      'gc19_pc.5utr' = '5\' UTR',
-#                      'gc19_pc.cds' = 'CDS',
-#                      'gc19_pc.promCore' = 'Core Promoter',
-#                      'gc19_pc.ss' = 'Splice site')
-#   
-#   # Replace the element type names in the data frame with modified names for plotting
-#   y$`element type` <- element_types[y$`element type`]
-#   
-#   # Plot histogram
-#   ggplot(y, aes(x = length, fill = `element type`)) +
-#     geom_histogram(binwidth = 20) +
-#     facet_wrap(~`element type`, scales = "free") +
-#     theme_minimal() +
-#     theme(text = element_text(size = 14),
-#           panel.grid = element_blank(), 
-#           axis.line = element_line(colour = "black")) +
-#     scale_fill_manual(values = create_element_colours()) +  # Use the function to generate colors
-#     labs(title = "Length Distribution for Each Element Type",
-#          x = "Length",
-#          y = "Frequency")
-#   
-#   ggsave(paste0(save_name,"perElement_length_histogram.png"),
-#          device = "png", width = 10, 
-#          bg = 'white',
-#          path = path_save)
-# }
-# 
-# 
-# ######################### driver identification plots ##########################
-# save_name = 'binomTest'
-# coding_nonCodings <- c('coding', 'non-coding')
-# based_ons <- c('all', 'in_CGC_new', 'in_pcawg', 'in_oncoKB', 'any')
-# for (coding_nonCoding in coding_nonCodings) {
-#   for (based_on in based_ons) {
-#     grouped_barPlot_model_benchmark(based_on, coding_nonCoding, save_name = save_name)
-#     precisinRecall_dotPlot(based_on, coding_nonCoding, save_name = save_name)
-#     top_100hit_barplot(based_on, coding_nonCoding, save_name = save_name)
-#   }
-# }
-# 
-# ####################### PCAWG length distribution plots ########################
-# path_responseTab_PCAWG <- '../external/BMR/rawInput/responseTabs/Pan_Cancer/reg_elems.tsv'
-# histogram_perElement_length(path_responseTab_PCAWG)
+ass_elem_long$element_type <- factor(ass_elem_long$element_type, 
+                                     levels = names(element_names), 
+                                     labels = element_names)
+
+# Create a grouped bar plot comparing usedFeatures for each element-type
+plot_ftrSp <- ggplot(ass_elem_long, aes(x = cohort, y = ass, fill = usedFeatures)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~element_type, nrow = 2, strip.position = "bottom", labeller = label_value) +
+  labs(x = "Cohort", y = ass_type, fill = NULL) +
+  
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 65, hjust = 1), 
+        text = element_text(size = 16),
+        panel.grid = element_blank(), 
+        legend.position = "bottom",
+        axis.line = element_line(colour = "black"),
+        strip.background = element_rect(color = "black", fill = "lightgrey"),  # Element names in boxes
+        strip.text = element_text(face = "bold", size = 10)) +
+  scale_fill_manual(values = create_method_colours()) +  # Set the interior colors
+  scale_color_manual(values = "black") +  # Set the border color
+  labs(y = Y_label, x = '')
+
+ggsave("../external/BMR/plots/TissueSp_ftrs_corr.png", plot = plot_ftrSp, 
+       width = 10, height = 6, dpi = 300)
