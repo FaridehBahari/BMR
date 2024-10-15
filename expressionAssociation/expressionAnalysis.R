@@ -1,3 +1,11 @@
+# Some driver mutations may only affect gene expression in early cancer stages and be undetectable by 
+# the expression analysis. On the other hand, passenger mutations could potentially affect expression 
+# without affecting cell survival. However, the much higher expression correlation signal among double-hit
+# than single-hit mutations in CTCF binding sites is compatible with a selective enrichment for functional 
+# impact and hence presence of driver mutations. However, mutational mechanisms may also correlate 
+# with expression in some cases (see below).22,23
+
+
 rm(list = ls())
 
 library(data.table)
@@ -199,8 +207,21 @@ donorInfo <- fread(path_donorInfo)
 complete_count_matrix <- as.data.frame(fread(path_FPKM_UQ))
 complete_cn <- fread(path_CN) # colnames are Tumor sample barcode (the column exists in maf data to match with Donor_ids)
 
-candidate <- 'gc19_pc.cds::gencode::SGK1::ENSG00000118515.7'
-cohort <- 'Lymph-BNHL' #'Eso-AdenoCa' #'Liver-HCC'
+
+###############################################################
+# candidate <- 'gc19_pc.cds::gencode::SGK1::ENSG00000118515.7' # 'gc19_pc.cds::gencode::ZNF608::ENSG00000168916.11'
+# cohort <- 'Lymph-BNHL' #'Eso-AdenoCa' #'Liver-HCC'
+
+
+
+
+##################################################################
+i = 1
+j = 1
+
+cohort = names(shared_drivers)[i]
+candidate = shared_drivers[[i]][j]
+
 cancer_specific_dat <- load_cancer_specific_data(path_donorInfo, cohort, all_mutData, all_sampleInfo)
 
 
@@ -236,5 +257,6 @@ glm_model_reduced <- glm(FPKM_UQ ~ SCNA ,
 # Likelihood ratio test (using anova)
 lrt <- anova(glm_model_reduced, glm_model, test = Test)
 p_value <- lrt$`Pr(>Chi)`[2]
+p_value
 x <- summary(glm_model)
 x[["coefficients"]]
