@@ -465,3 +465,197 @@ gbm_nc_nonTRUE[which(!(gbm_nc_nonTRUE$in_pcawg |
                          gbm_nc_nonTRUE$in_CGC_literature |
                          gbm_nc_nonTRUE$in_CGC)),]
 
+########################################## Revise compare tools ####################
+rm(list = ls())
+
+# setwd('C:/Active/projects/iDriver/iDriver/')
+
+library(data.table)
+library(openxlsx)
+library(dplyr)
+library(pROC)
+library(PRROC)
+
+source("benchmark/functions_benchmark.R")
+source("benchmark/functions_annotate_elements.R")
+
+path_procPCAWG_res <- "../extdata/procInput/PCAWG_results/"
+path_proccessedGE <- "../extdata/procInput/"
+# tissue <-  "Pancan-no-skin-melanoma-lymph"
+path_save_benchRes <- "../../make_features/external/BMR/output/Res_reviewerComments/driver_bench/"
+
+
+included_cohorts <-  c("Pancan-no-skin-melanoma-lymph", "Liver-HCC", "ColoRect-AdenoCA" ,
+                       "Uterus-AdenoCA" , "Kidney-RCC", "Lung-SCC", "Biliary-AdenoCA",
+                       "Stomach-AdenoCA", "Skin-Melanoma", "Panc-Endocrine", "Head-SCC",
+                       "Breast-AdenoCa", "Bladder-TCC", "Eso-AdenoCa", 
+                       "Lymph-BNHL", "Lymph-CLL",
+                       "CNS-GBM", "Panc-AdenoCA" , "Lung-AdenoCA" ,"Prost-AdenoCA",
+                       "Ovary-AdenoCA" , "Bone-Leiomyo", "CNS-Medullo","Bone-Osteosarc")
+
+
+
+sig_definition_methods <- c("fdr")
+sig_definition_thresholds <- c(.05)
+
+add_newMethod_to_pRes <- function(pRes, path_newRes){
+  
+  newMethod <- data.frame(fread(path_newRes))
+  newMethod <- newMethod[which(!grepl("lncrna.ncrna", newMethod$binID)),]
+  newMethod <- newMethod[which(!grepl("lncrna.promCore", newMethod$binID)),]
+  # newMethod <- newMethod[which(newMethod$nSample > 1),]
+  idx_pVal <- which(colnames(newMethod) %in% c("pValues", "p_value",
+                                               "raw_p", "pvals", "pp_element",
+                                               "raw_p_binom", "PVAL_MUT_BURDEN" )) 
+  idx_ID <- which(colnames(newMethod) %in% c("binID", "PCAWG_ID", 'id', 'ELT'))
+  
+  newMethod <- data.frame("PCAWG_IDs" = newMethod[,idx_ID], 
+                          "p_value" =  newMethod[,idx_pVal],
+                          "q_value" = rep(NA, nrow(newMethod)),
+                          "fdr" =  p.adjust(newMethod[,idx_pVal], "fdr"))
+  
+  newMethod <- newMethod[which(!is.na(newMethod$p_value)),]
+  
+  pRes$newMethod <- newMethod
+  class(pRes) = "pRes"
+  pRes
+}
+
+
+
+save_Measures_inSingletable <- function(path_save, newRESULTS, PATHs_newResults, pRes,
+                                        sig_definition_methods,
+                                        sig_definition_thresholds,
+                                        ann_PCAWG_ID_complement, tissue, based_on,
+                                        compareRank_new = list(FALSE, NA)){
+  
+  if (length(PATHs_newResults) != 0){
+    for (i in 1:length(PATHs_newResults)) {
+      print(PATHs_newResults[i])
+      pRes <- add_newMethod_to_pRes(pRes, PATHs_newResults[i])
+      names(pRes) <- c(names(pRes)[1:(length(pRes) -1)], newRESULTS[i])
+    }
+  }
+  
+  pRes <- pRes[which(names(pRes) %in% newRESULTS)]
+  
+  
+  
+  for (j in 1:length(sig_definition_methods)) {
+    sigCriteria <- define_significant_criteria(sig_definition_methods[j],
+                                               sig_definition_thresholds[j])
+    
+    st1 <- computeStat_1(pRes, sigCriteria, ann_PCAWG_ID_complement, based_on)
+    st_2 <- computeStat_2(pRes, sigCriteria, ann_PCAWG_ID_complement, based_on)$tables
+    
+    CDS_tab1 <- cbind(st1$CDS, "method" = rownames(st1$CDS))
+    CDS <- full_join(CDS_tab1, st_2$CDS)
+    
+    NC_tab1 <- cbind(st1$non_coding, "method" = rownames(st1$non_coding))
+    non_coding <- full_join(NC_tab1, st_2$non_coding)
+    
+    tab_all <- full_join(CDS, non_coding, by = "method")
+    
+    colnames(CDS) <- gsub("CDS_", "", colnames(CDS))
+    colnames(non_coding) <- gsub("NC_", "", colnames(non_coding))
+    
+    
+    
+    Measures <- list("CDS" = CDS, "non_coding" = non_coding,
+                     "all" = tab_all)
+    
+    df <- tab_all
+    col_order <- c("method", "CDS_nTPs", "CDS_nHits",
+                   "CDS_PRECISIONs", "CDS_Recalls", "CDS_F1", "CDS_AUC",
+                   "CDS_AUPR", "CDS_n_elemnts", "nc_n_elemnts", "NC_nTPs",
+                   "NC_nHits", "NC_PRECISIONs", "NC_Recalls", "NC_F1",
+                   "NC_AUC", "NC_AUPR")
+    
+    if (sig_definition_methods[j] == "fdr" & compareRank_new[[1]]) {
+      compare_nTPs <- c()
+      for(k in 1:nrow(df)){
+        sigCr_cds <- define_significant_criteria("fixedNumberOfElems",
+                                                 df$CDS_nHits[k] )
+        st1_nTP_cds <- computeStat_1(pRes, sigCr_cds, ann_PCAWG_ID_complement, based_on)
+        sigCr_nc <- define_significant_criteria("fixedNumberOfElems",
+                                                df$NC_nHits[k] )
+        st1_nTP_nc <- computeStat_1(pRes, sigCr_nc, ann_PCAWG_ID_complement, based_on)
+        
+        compare_nTPs <- rbind(compare_nTPs,
+                              c(st1_nTP_cds$CDS[compareRank_new[[2]], "CDS_nTPs"],
+                                st1_nTP_nc$non_coding[compareRank_new[[2]], "NC_nTPs"]))
+        
+      }
+      colnames(compare_nTPs) <- c("CDS_nTPcompare", "NC_nTPcompare")
+      sigCr_cds2 <- define_significant_criteria("fixedNumberOfElems",
+                                                df[which(df$method==compareRank_new[[2]]),
+                                                   which(colnames(df)=="CDS_nHits")])
+      st_nTP_cds <- computeStat_1(pRes, sigCr_cds2, ann_PCAWG_ID_complement, based_on)
+      CDS_nTPcompare_reverse=st_nTP_cds$CDS$CDS_nTPs
+      df <- cbind(df, CDS_nTPcompare_reverse, compare_nTPs)
+      col_order <- c("method", "CDS_nTPs", "CDS_nHits", "CDS_nTPcompare",
+                     "CDS_nTPcompare_reverse",
+                     "CDS_PRECISIONs", "CDS_Recalls", "CDS_F1", "CDS_AUC",
+                     "CDS_AUPR", "CDS_n_elemnts", "nc_n_elemnts", "NC_nTPs",
+                     "NC_nHits", "NC_nTPcompare", "NC_PRECISIONs", "NC_Recalls",
+                     "NC_F1", "NC_AUC", "NC_AUPR")
+    }
+    
+    # Use the select function to reorder the columns
+    df_reordered <- df %>% select(col_order)
+    
+    dir.create(paste0(path_save, tissue, "/tables/"),
+               showWarnings = F,
+               recursive = T)
+    write.csv(df_reordered, file = paste0(path_save, tissue,
+                                          "/tables/table_GoldStd_basedon_",
+                                          based_on,
+                                          sigCriteria$method, ".csv"))
+    
+    save(Measures, file = paste0(path_save, tissue,
+                                 "/tables/Measures_GoldStd_basedon_", based_on,
+                                 sigCriteria$method, ".RData"))
+  }
+  
+}
+
+
+
+
+for (tissue in included_cohorts) {
+  print(tissue)
+  
+  ########### 1) load the pRes object and annotated PCAWG_IDs ###########
+  ann_PCAWG_ID_complement <- fread(paste0(path_proccessedGE, "ann_PCAWG_ID_complement.csv"))
+  load(paste0(path_procPCAWG_res, tissue, ".RData"))
+  
+  
+  ########### 2) add new result(s) to pRes for computing measure stats and saving the measurment results ##########
+  newRESULTS <- c("eMET", 'DP', 'Dig', 'ActivedriverWGS')
+  
+  PATHs_newResults <- c(paste0("../../make_features/external/BMR/output/reviewerComments/", tissue, "/eMET/inference/eMET_inference.tsv"),
+                        paste0("../../DriverPower/output/", tissue, "/final_DP_result.tsv"),
+                        paste0("../../Dig/output/elemDriver/", tissue, "_final_Dig_result.tsv"),
+                        paste0("../../ActiveDriverWGSR/output/", tissue,"/final_AD_result.tsv"))
+                        
+  
+  
+  ## use PCAWG drivers/ CGC as gold standard for defining true positives
+  
+  driver_based_on <- c("in_CGC_new", "all", "in_pcawg", "in_oncoKB", "any")
+  
+  for (based_on in driver_based_on) {
+    save_Measures_inSingletable(path_save_benchRes, newRESULTS, PATHs_newResults, pRes, 
+                                sig_definition_methods,
+                                sig_definition_thresholds,
+                                ann_PCAWG_ID_complement, tissue, based_on #,
+                                # compareRank_new = list(TRUE, "GBM")
+    )
+    
+    
+  }
+  
+}
+
+
+
