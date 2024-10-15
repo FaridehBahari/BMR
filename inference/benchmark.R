@@ -659,3 +659,35 @@ for (tissue in included_cohorts) {
 
 
 
+################################################################################
+rm(list = ls())
+included_cohorts <- c("Pancan-no-skin-melanoma-lymph", "Liver-HCC", "ColoRect-AdenoCA" ,
+                      "Uterus-AdenoCA" , "Kidney-RCC", "Lung-SCC", "Biliary-AdenoCA",
+                      "Stomach-AdenoCA", "Skin-Melanoma", "Panc-Endocrine", "Head-SCC",
+                      "Breast-AdenoCa", "Bladder-TCC", "Eso-AdenoCa",
+                      "Lymph-BNHL", "Lymph-CLL",
+                      "CNS-GBM", "Panc-AdenoCA" , "Lung-AdenoCA" ,"Prost-AdenoCA",
+                      "Ovary-AdenoCA" , "Bone-Leiomyo", "CNS-Medullo","Bone-Osteosarc")
+
+files <- paste0('../external/BMR/output/reviewerComments/', included_cohorts, '/eMET/inference/eMET_inference.tsv')
+
+ass <- lapply(files, fread)
+
+# Add a cohort column to each assessment
+ass <- Map(function(dt, cohort) {
+  dt[, cohort := cohort]
+  return(dt)
+}, ass, included_cohorts)
+
+drivers <- lapply(ass, function(s){
+  s = s[which(s$nMut !=0), ]
+  print(nrow(s))
+  s$fdr = p.adjust(s$p_value, method = 'fdr')
+  s = s[which(s$fdr < 0.05), c('binID', 'nMut', 'nSample', 'length', 'p_value', 'fdr','cohort')]
+})
+
+drivers <- do.call(rbind, drivers)
+
+dir.create('../external/BMR/output/Res_reviewerComments/driverDiscovery/', recursive = T, showWarnings = F)
+fwrite(drivers, file = '../external/BMR/output/Res_reviewerComments/driverDiscovery/suppTab_eMET_allCohorts.tsv', sep = '\t')
+
