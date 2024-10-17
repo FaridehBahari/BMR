@@ -6,10 +6,10 @@
 # with expression in some cases (see below).22,23
 
 
-# rm(list = ls())
+rm(list = ls())
 # 
 # library(dplyr)
-# library(data.table)
+library(data.table)
 # 
 # dp <- fread('../external/BMR/output/Res_reviewerComments/driverDiscovery/DP_allCohorts.tsv')
 # eMET <- fread('../external/BMR/output/Res_reviewerComments/driverDiscovery/eMET_allCohorts.tsv')
@@ -162,7 +162,7 @@ ann <- ann[, c("PCAWG_IDs", "in_CGC_literature", "in_CGC_new",
 # # all ENSG_ids for the enhancers::chr14:106445600-106455000::NA::NA are for immunoglobulin heavy chain genes
 # novel_enhancer <- enhancerMAp[grepl('chr14:106445600-106455000', enhancerMAp$`chr3:69993400-69994200`),]$`ENSG00000187098;ENSG00000187098`
 ##################################################################################################
-rm(list = ls())
+# rm(list = ls())
 library(data.table)
 library(dplyr)
 library(readxl)
@@ -198,7 +198,7 @@ select_cohort <- function(path_donorInfo,
 
 generate_samplesInfo <- function(path_sample_sheet, path_IDs_maf){
   # load samples info and include white list samples
-  pcawg_supp <- fread(path_sample_sheet)
+  pcawg_supp <- as.data.frame(fread(path_sample_sheet))
   pcawg_supp <- pcawg_supp[which(grepl('RNA-Seq', pcawg_supp$library_strategy) & pcawg_supp$donor_wgs_exclusion_white_gray == 'Whitelist'),] #1359
   
   tumor_barcodes <- fread(path_IDs_maf)
@@ -261,6 +261,7 @@ load_cohort_specific_CNV_RNA <- function(count_matrix, cn, sampleInfo){
 
 
 restrict_CN_RNA_forCandidate <- function(cohort_specific_CN, cohort_specific_expression, candidate){
+  
   pattern <- strsplit(candidate, '::')[[1]][3]
   
   
@@ -584,10 +585,160 @@ df_expression_analysis <- as.data.frame(df_expression_analysis)
 
 
 df_expression_analysis <- left_join(df_expression_analysis, ann, by =c('PCAWG_ID' = 'PCAWG_IDs'))
+df_expression_analysis$target_gene <- NA
+
+
+
+##################################################################################
+
+get_enhancer_targetGenes <- function(enhancerID, gene_enhancer, ann_PCAWG_ID){
+  
+  enhancer_pos <- unlist(lapply(strsplit(enhancerID, "::"),
+                                function(s){
+                                  s[2]
+                                }))
+  
+  gene_enhancer <- gene_enhancer[which(gene_enhancer$enhancer_pos == enhancer_pos),]
+  ensemblIDs_enhancers <- strsplit(gene_enhancer$ENSG_id, ";")
+  names(ensemblIDs_enhancers) <- gene_enhancer$enhancer_pos
+  
+  gene_enhancer_long <- data.frame(enhancer_pos = rep(gene_enhancer$enhancer_pos,
+                                                      unlist(lapply(ensemblIDs_enhancers,
+                                                                    length))),
+                                   ENSG_ids = unlist(ensemblIDs_enhancers))
+  rownames(gene_enhancer_long) <- c()
+  
+  CDSs <- ann_PCAWG_ID[which(ann_PCAWG_ID$type_of_element == "gc19_pc.cds"),]
+  CDSs$ENSG_ids <- extract_ensembleIDs(CDSs$PCAWG_IDs)
+  CDSs <- CDSs[,c('PCAWG_IDs', 'ENSG_ids')]
+  
+  gene_enhancer_long <- left_join(gene_enhancer_long, CDSs, by = 'ENSG_ids')
+  gene_enhancer_long
+}
+
+
+
+path_genhancer_PCAWG <- '../../activeProj/extdata/rawInput/map.enhancer.gene.txt.gz'
+gene_enhancer <- data.frame(fread(path_genhancer_PCAWG,
+                                  header = F, col.names = c("enhancer_pos", "ENSG_id")))
+ann_PCAWG_ID <- fread('../../activeProj/extdata/procInput/ann_PCAWG_ID_complement.csv')
+extract_ensembleIDs <- function(PCAWG_IDs){
+  
+  x <- unlist(lapply(strsplit(PCAWG_IDs, "::"), function(s){
+    unlist(lapply(s[4], function(z){
+      unlist(lapply(strsplit(z, "\\."), function(b){
+        b[1]
+      }))
+    }))
+  }))
+  
+  return(x)
+}
+
+cohorts <- enhancers$cohort
+enhancers <- enhancers$binID
+
+
+
+df <- c()
+for (i in 1:length(enhancers)) {
+  enhancerID = enhancers[i]
+  x <- get_enhancer_targetGenes(enhancerID, gene_enhancer, ann_PCAWG_ID)
+  x$cohort = cohorts[i]
+  x$enhancerID <- enhancerID
+  df <- rbind(df, x)
+}
+
+df <- df[!is.na(df$PCAWG_IDs),]
+df <- df[!duplicated(df),]
+df$PCAWG_IDs
+
+
+df_expression_analysis2 <- c()
+for (i in 1:nrow(df)) {
+  cohort = df$cohort[i]
+  print(cohort)
+  
+  cancer_specific_dat <- load_cancer_specific_data(path_donorInfo, cohort, all_mutData, all_sampleInfo)
+  
+  
+  cancerSp_mutData = cancer_specific_dat[[1]]
+  cancerSp_sampleInfo = cancer_specific_dat[[2]]
+  
+  cancer_specific_CN_RNA <- load_cohort_specific_CNV_RNA(complete_count_matrix, complete_cn, cancerSp_sampleInfo)
+  
+  
+  cohort_specific_CN <- cancer_specific_CN_RNA$cns_withRNAseqData
+  cohort_specific_expression <- cancer_specific_CN_RNA$restricted_count_matrix
+  n_RNAseq <- cancer_specific_CN_RNA$n_RNAseq
+  n_CN <- cancer_specific_CN_RNA$n_CN
+  
+  candidate_info <- c()
+  if(n_RNAseq != 0){
+    
+    target_gene <- df$PCAWG_IDs[i]
+    candidateDat <- restrict_CN_RNA_forCandidate(cohort_specific_CN, cohort_specific_expression, target_gene)
+    
+    candidate_rna_subset = candidateDat$candidate_rna_subset
+    candidate_cn_subset = candidateDat$candidate_cn_subset
+    N_with_both_RNA_CN <- candidateDat$N_with_both_RNA_CN
+    
+    candidate = df$enhancerID[i]
+    if (N_with_both_RNA_CN != 0) {
+      model_data <- generate_data_glm(candidate, cancerSp_mutData, donorInfo, cohort,
+                                      candidate_rna_subset, candidate_cn_subset)
+      
+      final_df = model_data$final_df
+      N = model_data$totSamples
+      nMutated <- model_data$nMutated
+      nMutated_withRNAseq_CN <- model_data$nMutated_withRNAseq_CN
+      
+      if (nMutated_withRNAseq_CN >= 3) {
+        p_value_CN <- compute_pVal_quassiPois_CN(final_df, cohort, Test = 'LRT')
+        # p_value_CN <- p_value_CN$`Pr(>Chi)`[2]
+        p_value_SCNA <- compute_pVal_quassiPois_SCNA(final_df, cohort, Test = 'LRT')
+        # p_value_SCNA <- p_value_SCNA$`Pr(>Chi)`[2]
+      } else {
+        p_value_CN <- NA
+        p_value_SCNA <- NA
+      }
+      
+      candidate_info <- c(cohort, candidate, n_RNAseq, n_CN, N_with_both_RNA_CN, 
+                          N, nMutated, nMutated_withRNAseq_CN, p_value_CN,
+                          p_value_SCNA, target_gene)
+      
+      df_expression_analysis2 <- rbind(df_expression_analysis2, candidate_info)
+    }
+    
+  }
+  
+}
+
+colnames(df_expression_analysis2) <- c('cohort', 'PCAWG_ID', 'total_RNAseq_data', 'total_CN_data', 
+                                      'nSamples_with_both_RNAandCN', 'N', 
+                                      '#Mutated_samples', '#Mutated_samples_withRNAseq_CN',
+                                      'p_value_CN',
+                                      'p_value_SCNA', 'target_gene')
+
+df_expression_analysis2 <- as.data.frame(df_expression_analysis2)
+
+
+df_expression_analysis2 <- left_join(df_expression_analysis2, ann, by =c('PCAWG_ID' = 'PCAWG_IDs'))
 
 dir.create('../external/BMR/output/Res_reviewerComments/RNAexpression/', recursive = T, showWarnings = F)
-df_expression_analysis <- left_join(df_expression_analysis, drivers, by = c('cohort', 'PCAWG_ID' = 'binID'))
 
-fwrite(df_expression_analysis, file = '../external/BMR/output/Res_reviewerComments/RNAexpression/supp_drivers_expression.tsv', sep = '\t')
+df_expression_analysis <- rbind(df_expression_analysis, df_expression_analysis2)
+df_expression_analysis <- left_join(df_expression_analysis, drivers, 
+                                    by = c('cohort', 'PCAWG_ID' = 'binID'))
+fwrite(df_expression_analysis, 
+       file = '../external/BMR/output/Res_reviewerComments/RNAexpression/supp_drivers_expression.tsv', 
+       sep = '\t')
 
-
+################################# candidates without expression analysis ###################
+drivers = fread('../external/BMR/output/Res_reviewerComments/driverDiscovery/suppTab_eMET_allCohorts.tsv')
+x <- fread('../external/BMR/output/Res_reviewerComments/RNAexpression/supp_drivers_expression.tsv')
+drivers$binID[which(!drivers$binID %in% x$PCAWG_ID)]
+# "enhancers::chr7:86865600-86866400::NA::NA"           "enhancers::chr9:7613000-7615400::NA::NA"            
+# "gc19_pc.cds::gencode::AC026310.1::ENSG00000268865.1" "gc19_pc.cds::gencode::ATRX::ENSG00000085224.16"     
+# "gc19_pc.cds::gencode::DAXX::ENSG00000204209.6"       "enhancers::chr14:106445600-106455000::NA::NA"       
+# "gc19_pc.cds::gencode::P2RY8::ENSG00000182162.5" 
