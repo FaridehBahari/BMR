@@ -871,14 +871,8 @@ perElem_importance_heatmap <- function(path_ratio_perElemGroups,
     geom_tile(color = "black") +
     geom_text(aes(label = round(`Importance per feature category \n (correlation ratio)`, 2)), 
               color = "black", size = 3.5)  +  # Add text labels
-    # scale_fill_gradientn(colors = c( 'black', "#43589F", '#7393B3', "#3288BD", "#66C2A5", "#ABDDA4", 
-    #                                  "#E6F598", "#FDAE61", "#D53E4F",
-    #                                  "#9E0142"),# rev(brewer.pal(6, "Spectral")),
-    #                      breaks = c(0, .1, .2,  0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
-    #                      labels = c(0, .1, .2,  0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
-    #                      limits = c(0, 1),
-    #                      na.value = "grey50",
-    #                      guide = "colorbar") +
+    
+    
     scale_fill_gradientn(colors = c("#053061", "#2166AC", "#4393C3", "#92C5DE" ,
                                     "#D1E5F0", "#E7E1EF", "#D4B9DA" , "#CE1256", "#980043" ),
                          breaks = c(0, .1, .2,  0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
@@ -886,6 +880,8 @@ perElem_importance_heatmap <- function(path_ratio_perElemGroups,
                          limits = c(0, 1),
                          na.value = "grey50",
                          guide = "colorbar") +
+    
+    
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           text = element_text(size = 15),) +
@@ -939,6 +935,8 @@ perElem_importance_heatmap <- function(path_ratio_perElemGroups,
                          limits = c(0, 1),
                          na.value = "grey50",
                          guide = "colorbar") +
+   
+    
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           text = element_text(size = 15)) +
@@ -965,6 +963,75 @@ perElem_importance_heatmap <- function(path_ratio_perElemGroups,
          bg = 'white',
          path = path_save)
 }
+
+
+
+perElem_fineTune_heatmap <- function(path_ratio_perElemGroups,
+                                       path_save = '../external/BMR/plots/',
+                                       save_name = '') {
+  dir.create(path_save, showWarnings = F, recursive = T)
+  
+  data <- fread(path_ratio_perElemGroups)
+  data <- data[, c(2, 3,4)]
+  data <- data[which(!data$Element %in% c('lncrna.ncrna', 'lncrna.promCore')),]
+  
+  data$feature_category = sapply(data$feature_category, function(x) paste0(toupper(substring(x, 1, 1)), substring(x, 2)))
+  data <- data[which(!data$feature_category %in% c('DNA_methylation', 'APOBEC')),]
+  data$feature_category <- gsub('_', " ", data$feature_category)
+  
+  colnames(data) <- c("Element type",
+                      "Importance per feature category \n (correlation ratio)",
+                      "Feature Category")
+  
+  element_names <- c('Enhancers', '3\' UTR', '5\' UTR', 'CDS', 'Core Promoter', 'Splice site')
+  names(element_names) <- c('enhancers', 'gc19_pc.3utr', 'gc19_pc.5utr', 'gc19_pc.cds', 'gc19_pc.promCore', 'gc19_pc.ss')
+  
+  data$`Element type` <- element_names[data$`Element type`]
+  data$`Element type` <- factor(data$`Element type`)
+  
+  # Create the heatmap
+  heatmap <- ggplot(data, aes(x = `Feature Category`, y = `Element type`, fill = `Importance per feature category \n (correlation ratio)`)) +
+    geom_tile(color = "black") +
+    geom_text(aes(label = round(`Importance per feature category \n (correlation ratio)`, 2)), 
+              color = "black", size = 3.5) +
+    scale_fill_gradientn(colors = c(
+                                    "#D1E5F0", '#F1EDF7', "#E7E1EF", "#D4B9DA" ,'#C994C7', '#DD1C77', "#CE1256", "#980043", '#6B0030' ), 
+                         breaks = c(0, 0.05 , .1, .17, .25, .32, .4, .7,  1.4),
+                         labels = c(0, .05, .1,  .17, .25, .32, .4, .7, 1.4),
+                         limits = c(0, 1.4),
+                         na.value = "grey50",
+                         guide = "colorbar") +
+    
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          text = element_text(size = 15)) +
+    labs(x = "", y = "")
+  
+  # Extract the legend using cowplot
+  legend <- cowplot::get_legend(heatmap)
+  
+  # Remove the legend from the heatmap
+  heatmap <- heatmap + theme(legend.position = "none")
+  
+  # Save the heatmap
+  ggsave(paste0("perElement_variableImportance_heatmap", save_name, ".png"),
+         plot = heatmap,
+         device = "png", width = 5, height = 4,
+         bg = 'white',
+         path = path_save)
+  
+  # Save the legend
+  legend_plot <- ggdraw() + draw_grob(legend)
+  ggsave(paste0("perElement_variableImportance_legend", save_name, ".png"),
+         plot = legend_plot,
+         device = "png", width = 4, height = 4,
+         bg = 'white',
+         path = path_save)
+}
+
+
+
+
 
 
 save_nTP_nHit_plot <- function(path_driver_performance, GBM_name,
@@ -2016,7 +2083,8 @@ importance_plot(parent_directory, path_GBM = path_GBM, save_name = 'LOO_FigS5', 
 path_ratio_perElemGroups <- '../external/BMR/output/eMET_GroupImportance/importanceRatios.csv'
 perElem_importance_heatmap(path_ratio_perElemGroups, save_name = 'Fig5b')
 
-
+path_ratio_perElemGroups_fineTuned <- '../external/BMR/output/Res_reviewerComments/finetunedFtrImpo/importanceRatios.csv'
+perElem_fineTune_heatmap(path_ratio_perElemGroups_fineTuned, save_name = 'Fig5_newPanel')
 
 ###################################################################################
 
@@ -2177,3 +2245,116 @@ plot_ftrSp <- ggplot(ass_elem_long, aes(x = cohort, y = ass, fill = usedFeatures
 
 ggsave("../external/BMR/plots/TissueSp_ftrs_corr.png", plot = plot_ftrSp, 
        width = 10, height = 6, dpi = 300)
+
+######################### waterfall plot ##########################
+rm(list = ls())
+
+library(ggplot2)
+library(dplyr)
+library(data.table)
+
+import_allCohorts <- function(paths, ass_type, cohorts){
+  cohorts <- ifelse(cohorts == 'Pancan-no-skin-melanoma-lymph', 'Pan-cancer', cohorts)
+  SNVs <- lapply(paths, fread)
+  SNVs <- do.call(rbind, lapply(SNVs, function(s){
+    s[grepl(ass_type, s$V1),]
+  }))
+  
+  
+  method <- unique(ifelse(grepl('eMET', SNVs$V1), 'eMET', 'Intergenic'))
+  SNVs <- SNVs[,-c('V1')]
+  if (method == 'Intergenic') {
+    SNVs <- SNVs[,-c('train')]
+  }
+  
+  SNVs$cohort <- cohorts
+  
+  SNVs
+}
+
+ass_type <- 'corr'
+cohorts <- c( "Pancan-no-skin-melanoma-lymph","Liver-HCC", "Bladder-TCC" ,"ColoRect-AdenoCA" , "Lymph-BNHL",
+              "Uterus-AdenoCA" , "Kidney-RCC", "Lymph-CLL", "Lung-SCC",
+              "Stomach-AdenoCA", "Skin-Melanoma", "Panc-Endocrine", "Head-SCC",
+              "Breast-AdenoCa" , "Biliary-AdenoCA", "Eso-AdenoCa",
+              "CNS-GBM", "Panc-AdenoCA" , "Lung-AdenoCA" ,"Prost-AdenoCA",
+              "Ovary-AdenoCA" , "Bone-Leiomyo", "CNS-Medullo","Bone-Osteosarc") #
+
+files_eMET <- paste0('../external/BMR/output/reviewerComments/', cohorts, '/eMET/eMET_assessment.tsv')
+files_intergenic <- paste0('../external/BMR/output/reviewerComments/', cohorts, '/GBM/GBM_assessments.tsv')
+
+
+
+
+intergenic <- import_allCohorts(files_intergenic, ass_type, cohorts)
+eMET <- import_allCohorts(files_eMET, ass_type, cohorts)
+
+idx <- order(intergenic$cohort)
+intergenic <- as.data.frame(intergenic[idx,])
+eMET <- as.data.frame(eMET[idx,])
+
+elems <- c( 'enhancers', 'gc19_pc.3utr', 'gc19_pc.5utr',
+            'gc19_pc.cds', 'gc19_pc.promCore', 'gc19_pc.ss')
+
+data <- c()
+for (elem in elems) {
+  idx_eMET = which(colnames(eMET) == elem)
+  idx_int = which(colnames(intergenic) == elem)
+  
+  coh = intergenic$cohort
+  diff = eMET[,idx_eMET] - intergenic[,idx_int]
+  element = rep(elem, nrow(intergenic))
+  x <- data.frame('cohort'= coh, 'element_type' = element, 'diff' = diff)
+  data <- rbind(data, x)
+}
+
+create_element_colours <- function() {
+  c(
+    enhancers = '#b03914', Enhancers = '#b03914',
+    `3' UTR` = "#14b556", gc19_pc.3utr = "#14b556", 
+    `5' UTR` = "#AAAA44", gc19_pc.5utr = "#AAAA44",
+    CDS = "#CC99BB", gc19_pc.cds = "#CC99BB",
+    `Core Promoter` = "#77AADD", gc19_pc.promCore = "#77AADD", 
+    `Splice site` = "#11266d", gc19_pc.ss = "#11266d", 
+    lncRNA = '#daa520', lncrna.ncrna = '#daa520', 
+    `lncRNA Promoter` = "#DDAA77", lncrna.promCore = "#DDAA77",
+    Intergenic = "#AFBCCB",
+    `Intergenic with overlap` = "#E8CEC1"
+  )
+}
+
+element_colours <- create_element_colours()
+
+# Unique element types
+element_types <- c("gc19_pc.3utr", "gc19_pc.promCore", "enhancers",
+                   "gc19_pc.5utr","gc19_pc.cds", "gc19_pc.ss")
+
+# Specify the path to save the plots
+path_save <- "../external/BMR/output/Res_reviewerComments/plots1/"
+dir.create(path_save, showWarnings = F, recursive = T)
+# Plot for each element type
+for (element in element_types) {
+  plot_data <- data %>% filter(element_type == element)
+  
+  p <- ggplot(plot_data, aes(x = reorder(cohort, -diff), y = diff, fill = element_type)) +
+    geom_bar(stat = "identity", position = "identity") +
+    scale_fill_manual(values = create_element_colours()[element]) +
+    theme_minimal() +
+    theme(
+      legend.position = "none", # Remove legend
+      panel.grid = element_blank(), # Remove grid lines
+      axis.text.x = element_text(angle = 65, hjust = 1, size = 12), # Increase font size
+      axis.text.y = element_text(size = 12), # Increase font size
+      axis.title.y = element_text(size = 14), # Increase font size
+      axis.line = element_line(colour = "black"),
+      plot.title = element_text(size = 16, hjust = 0.5)) + # Increase title font size
+    labs(x = "", y = "Correlation Difference (eMET - Intergenic)", 
+         title = '') 
+  
+  # Save the plot
+  ggsave(filename = paste0(path_save, "Waterfall_Plot_", element, ".png"), 
+         bg = 'white', plot = p, width = 8, height = 6)
+}
+
+
+######################################
