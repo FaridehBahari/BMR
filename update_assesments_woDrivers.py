@@ -397,3 +397,34 @@ for category in categories:
 
 all_ratio_dfs.to_csv('../external/BMR/output/eMET_GroupImportance/importanceRatios.csv', sep=",") 
 
+################################# repeated train-test ######################################
+# Update to include MAE
+
+import pandas as pd
+from performance.assessModels import assess_model, read_obs, read_pred
+# import re
+
+Y_obs_all_intergenic = read_obs('../external/BMR/rawInput/responseTabs_bedtools/Pan_Cancer/var_bins.tsv', True)
+DS = 'DS50k'
+model = 'nn_poisLoss'
+n_repeat = 10
+pred_paths = []
+for i in range(n_repeat):
+    rep_number = i+1
+    pred_path = f'../external/BMR/output/with_RepliSeq_HiC/DownSampling/{DS}/{model}/rep_train_test/{model}_predTest{rep_number}.tsv'
+    
+    print(pred_path)
+    
+    Y_pred = read_pred(pred_path)
+    Y_obs_unseen = Y_obs_all_intergenic.loc[Y_pred.index]
+    
+    parts = pred_path.split('/')
+    
+    model_name = parts[-3]
+    Nr_pair_acc = 100000
+    assessment = assess_model(Y_pred, Y_obs_unseen, 
+                  Nr_pair_acc, model_name, per_element=False)
+    
+    # rep_number = re.findall(r'\d+', pred_path)[0]
+    save_ass = '/'.join(parts[:-1]) + '/'  + model_name + '_M' + str(rep_number) + '_assessment.tsv'
+    assessment.to_csv(save_ass, sep = '\t')
