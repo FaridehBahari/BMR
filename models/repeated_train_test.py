@@ -62,8 +62,8 @@ def Exp_Var_performance_onValSets(dir_path, metric):
 
 def save_metrics_summary(dir_path):
     result = []
-    metrics = ['corr', 'acc', 'mse']
-
+    metrics = ['corr', 'acc', 'mse', 'made']
+    
     for performance_metric in metrics:
         Exp, Var = Exp_Var_performance_onValSets(dir_path, performance_metric)
         
@@ -73,10 +73,10 @@ def save_metrics_summary(dir_path):
             'Mean': Exp,
             'Variance': Var
         })
-
+        
     # Create the DataFrame
     result_df = pd.DataFrame(result).set_index('Metric').pivot_table(index=None, columns='Metric')
-
+    
     # Save the DataFrame to a CSV file in the parent directory
     parent_dir_path = os.path.dirname(os.path.abspath(dir_path))
     output_path = os.path.join(parent_dir_path, 'model_metrics_summary.tsv')
