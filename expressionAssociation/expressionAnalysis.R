@@ -7,165 +7,10 @@
 
 
 rm(list = ls())
-# 
-# library(dplyr)
 library(data.table)
-# 
-# dp <- fread('../external/BMR/output/Res_reviewerComments/driverDiscovery/DP_allCohorts.tsv')
-# eMET <- fread('../external/BMR/output/Res_reviewerComments/driverDiscovery/eMET_allCohorts.tsv')
-# 
-# df <- rbind(dp, eMET)
 ann <- fread('../external/BMR/procInput/ann_PCAWG_ID_complement.csv')
 ann <- ann[, c("PCAWG_IDs", "in_CGC_literature", "in_CGC_new",
                "in_oncoKB", "in_pcawg", "tissues")]
-# df <- left_join(df, ann, by =c('PCAWG_ID' = 'PCAWG_IDs'))
-# 
-# # Function to get shared and unique PCAWG_IDs for each cohort
-# get_shared_unique_ids <- function(data) {
-#   as.list(data %>%
-#             group_by(cohort) %>%
-#             summarize(
-#               shared = list(intersect(PCAWG_ID[tools == "DriverPower"], PCAWG_ID[tools == "eMET"])),
-#               unique_DriverPower = list(setdiff(PCAWG_ID[tools == "DriverPower"], PCAWG_ID[tools == "eMET"])),
-#               unique_eMET = list(setdiff(PCAWG_ID[tools == "eMET"], PCAWG_ID[tools == "DriverPower"]))
-#             ))
-# }
-# 
-# extract_novel_candidates <- function(updated_list){
-#   extract_unReported <- function(df){
-#     df <- as.data.frame(df)
-#     
-#     df <- (df[df$in_CGC_literature == F &
-#                 df$in_CGC_new == F &
-#                 df$in_oncoKB == F
-#               & df$in_pcawg == F,])
-#     df <- df[order(df$p_value, decreasing = F),]
-#     df[, c('PCAWG_ID', 'cohort')]
-#   }
-#   
-#   x = lapply(updated_list, function(s){
-#     if(nrow(s) != 0){
-#       s = extract_unReported(s)
-#     } else {
-#       s = c()
-#     }
-#     s
-#   }
-#   )
-#   
-#   novel_candidates <- do.call(rbind, x)
-#   rownames(novel_candidates) <- c()
-#   novel_candidates[!duplicated(novel_candidates),]
-#   
-# }
-# 
-# 
-# 
-# 
-# # Apply the function
-# result <- get_shared_unique_ids(df)
-# 
-# cohorts <- result$cohort
-# 
-# shared_drivers <- result$shared
-# names(shared_drivers) <- cohorts
-# 
-# 
-# DP_unique <- result$unique_DriverPower
-# names(DP_unique) <- cohorts
-# 
-# eMET_unique <- result$unique_eMET
-# names(eMET_unique) <- cohorts
-# 
-# 
-# 
-# # Assuming df contains a column 'PCAWG_IDs' and the list eMET_unique has vectors for each cohort
-# df <- as.data.frame(df)
-# update_tools_list <- function(T_unique, df) {
-#   # Iterate over each element in the list
-#   lapply(names(T_unique), function(cohort) {
-#     # Extract the vector for each cohort
-#     vec <- T_unique[[cohort]]
-#     df_cohort <- df[df$cohort == cohort,]
-#     
-#     # If the vector is non-empty, filter df based on matching PCAWG_IDs
-#     if (length(vec) > 0) {
-#       filtered_df <- df_cohort[df_cohort$PCAWG_ID %in% vec, ]
-#       return(filtered_df)
-#     } else {
-#       return(data.frame())  # Return an empty dataframe if the vector is empty
-#     }
-#   })
-# }
-# 
-# # Apply the function to eMET_unique and store the result
-# updated_eMET_list <- update_tools_list(eMET_unique, df)
-# names(updated_eMET_list) <- cohorts
-# 
-# 
-# updated_dp_list <- update_tools_list(DP_unique, df)
-# names(updated_dp_list) <- cohorts
-# 
-# 
-# updated_shared <- update_tools_list(shared_drivers, df)
-# names(updated_shared) <- cohorts
-# 
-# 
-# 
-# 
-# eMET_novel <- extract_novel_candidates(updated_eMET_list)
-# dp_novel <- extract_novel_candidates(updated_dp_list)
-# 
-# shared_novel <- extract_novel_candidates(updated_shared)
-# 
-# 
-# 
-# path_genhancer_PCAWG <- '../../iDriver/extdata/rawInput/map.enhancer.gene.txt.gz'
-# gene_enhancer <- data.frame(fread(path_genhancer_PCAWG, 
-#                                   header = F, col.names = c("enhancer_pos", "ENSG_id")))
-# ann_PCAWG_ID <- fread('../../iDriver/extdata/procInput/ann_PCAWG_ID_complement.csv')
-# extract_ensembleIDs <- function(PCAWG_IDs){
-#   
-#   x <- unlist(lapply(strsplit(PCAWG_IDs, "::"), function(s){
-#     unlist(lapply(s[4], function(z){
-#       unlist(lapply(strsplit(z, "\\."), function(b){
-#         b[1]
-#       }))
-#     }))
-#   }))
-#   
-#   return(x)
-# }
-# 
-# enhancerID <- 'enhancers::chr14:106445600-106455000::NA::NA'
-# enhancer_pos <- unlist(lapply(strsplit(enhancerID, "::"), 
-#                               function(s){
-#                                 s[2]
-#                               }))
-# 
-# gene_enhancer <- gene_enhancer[which(gene_enhancer$enhancer_pos == enhancer_pos),]
-# ensemblIDs_enhancers <- strsplit(gene_enhancer$ENSG_id, ";")
-# names(ensemblIDs_enhancers) <- gene_enhancer$enhancer_pos
-# 
-# gene_enhancer_long <- data.frame(enhancer_pos = rep(gene_enhancer$enhancer_pos, 
-#                                                     unlist(lapply(ensemblIDs_enhancers, 
-#                                                                   length))),
-#                                  ENSG_ids = unlist(ensemblIDs_enhancers))
-# 
-# CDSs <- ann_PCAWG_ID[which(ann_PCAWG_ID$type_of_element == "gc19_pc.cds"),]
-# CDSs$ENSG_ids <- extract_ensembleIDs(CDSs$PCAWG_IDs)
-# CDSs <- CDSs[,c('PCAWG_IDs', 'ENSG_ids')]
-# 
-# CDS_enhancer <- left_join(gene_enhancer_long, CDSs, by = "ENSG_ids")
-# unique(CDS_enhancer$PCAWG_IDs)
-
-# # all ENSG_ids for the enhancers::chr14:106445600-106455000::NA::NA are for immunoglobulin heavy chain genes
-# novel_enhancer <- enhancerMAp[grepl('chr14:106445600-106455000', enhancerMAp$`chr3:69993400-69994200`),]$`ENSG00000187098;ENSG00000187098`
-##################################################################################################
-# rm(list = ls())
-library(data.table)
-library(dplyr)
-library(readxl)
 
 ############################## Functions ##############################
 select_cohort <- function(path_donorInfo, 
@@ -388,33 +233,22 @@ path_donorInfo <- '../../iDriver/extdata/procInput/iDriverInputs/donorInfo.tsv'
 path_CN <- '../../gene_level_calls/all_samples.consensus_CN.by_gene.170214.txt.gz'
 path_FPKM_UQ <- '../../expression/tophat_star_fpkm_uq.v2_aliquot_gl_ncg.tsv.gz'
 
-all_mutData <- fread('../../iDriver/extdata/procInput/iDriverInputs/mutData.tsv')
-all_sampleInfo <- generate_samplesInfo(path_sample_sheet, path_IDs_maf)
-donorInfo <- fread(path_donorInfo)
-
-complete_count_matrix <- as.data.frame(fread(path_FPKM_UQ))
-complete_cn <- fread(path_CN) # colnames are Tumor sample barcode (the column exists in maf data to match with Donor_ids)
-
-
-###############################################################
-# candidate <- 'gc19_pc.cds::gencode::SGK1::ENSG00000118515.7' # 'gc19_pc.cds::gencode::ZNF608::ENSG00000168916.11'
-# cohort <- 'Lymph-BNHL' #'Eso-AdenoCa' #'Liver-HCC'
-
-
-
-
-##################################################################
-
-# drivers = shared_drivers
-# drivers <- lapply(drivers, function(s){
-#   s[!grepl('enhancers', s)]
-# })
+# all_mutData <- fread('../../iDriver/extdata/procInput/iDriverInputs/mutData.tsv')
+# all_sampleInfo <- generate_samplesInfo(path_sample_sheet, path_IDs_maf)
+# donorInfo <- fread(path_donorInfo)
 # 
+# complete_count_matrix <- as.data.frame(fread(path_FPKM_UQ))
+# complete_cn <- fread(path_CN) # colnames are Tumor sample barcode (the column exists in maf data to match with Donor_ids)
+# ###################################################################################
+# drivers = fread('../external/BMR/output/Res_reviewerComments/driverDiscovery/suppTab_eMET_allCohorts.tsv')
+# enhancers <- drivers[which(grepl('enhancers', drivers$binID)),]
+# drivers <- as.data.frame(drivers[which(!grepl('enhancers', drivers$binID)),])
 # 
+# all_cohorts <- unique(drivers$cohort)
 # 
 # df_expression_analysis <- c()
-# for (i in 1:length(drivers)) {
-#   cohort = names(drivers)[i]
+# for (i in 1:length(all_cohorts)) {
+#   cohort = all_cohorts[i]
 #   print(cohort)
 #   
 #   cancer_specific_dat <- load_cancer_specific_data(path_donorInfo, cohort, all_mutData, all_sampleInfo)
@@ -433,9 +267,11 @@ complete_cn <- fread(path_CN) # colnames are Tumor sample barcode (the column ex
 #   
 #   candidate_info <- c()
 #   if(n_RNAseq != 0){
-#     for (j in 1:length(drivers[[i]])) {
+#     cancerSp_drivers <- drivers[which(drivers$cohort == cohort),]
+#     cancerSp_drivers <- cancerSp_drivers$binID
+#     for (j in 1:length(cancerSp_drivers)) {
 #       
-#       candidate = drivers[[i]][j]
+#       candidate = cancerSp_drivers[j]
 #       
 #       if(length(candidate) != 0 && !is.na(candidate)){
 #         print(candidate)
@@ -472,8 +308,8 @@ complete_cn <- fread(path_CN) # colnames are Tumor sample barcode (the column ex
 #           df_expression_analysis <- rbind(df_expression_analysis, candidate_info)
 #         }
 #         
-#         }
-#         
+#       }
+#       
 #     }
 #   }
 #   
@@ -488,33 +324,215 @@ complete_cn <- fread(path_CN) # colnames are Tumor sample barcode (the column ex
 # 
 # 
 # df_expression_analysis <- left_join(df_expression_analysis, ann, by =c('PCAWG_ID' = 'PCAWG_IDs'))
+# df_expression_analysis$target_gene <- NA
+# 
+# 
+# 
+# ##################################################################################
+# 
+# get_enhancer_targetGenes <- function(enhancerID, gene_enhancer, ann_PCAWG_ID){
+#   
+#   enhancer_pos <- unlist(lapply(strsplit(enhancerID, "::"),
+#                                 function(s){
+#                                   s[2]
+#                                 }))
+#   
+#   gene_enhancer <- gene_enhancer[which(gene_enhancer$enhancer_pos == enhancer_pos),]
+#   ensemblIDs_enhancers <- strsplit(gene_enhancer$ENSG_id, ";")
+#   names(ensemblIDs_enhancers) <- gene_enhancer$enhancer_pos
+#   
+#   gene_enhancer_long <- data.frame(enhancer_pos = rep(gene_enhancer$enhancer_pos,
+#                                                       unlist(lapply(ensemblIDs_enhancers,
+#                                                                     length))),
+#                                    ENSG_ids = unlist(ensemblIDs_enhancers))
+#   rownames(gene_enhancer_long) <- c()
+#   
+#   CDSs <- ann_PCAWG_ID[which(ann_PCAWG_ID$type_of_element == "gc19_pc.cds"),]
+#   CDSs$ENSG_ids <- extract_ensembleIDs(CDSs$PCAWG_IDs)
+#   CDSs <- CDSs[,c('PCAWG_IDs', 'ENSG_ids')]
+#   
+#   gene_enhancer_long <- left_join(gene_enhancer_long, CDSs, by = 'ENSG_ids')
+#   gene_enhancer_long
+# }
+# 
+# 
+# 
+# path_genhancer_PCAWG <- '../../activeProj/extdata/rawInput/map.enhancer.gene.txt.gz'
+# gene_enhancer <- data.frame(fread(path_genhancer_PCAWG,
+#                                   header = F, col.names = c("enhancer_pos", "ENSG_id")))
+# ann_PCAWG_ID <- fread('../../activeProj/extdata/procInput/ann_PCAWG_ID_complement.csv')
+# extract_ensembleIDs <- function(PCAWG_IDs){
+#   
+#   x <- unlist(lapply(strsplit(PCAWG_IDs, "::"), function(s){
+#     unlist(lapply(s[4], function(z){
+#       unlist(lapply(strsplit(z, "\\."), function(b){
+#         b[1]
+#       }))
+#     }))
+#   }))
+#   
+#   return(x)
+# }
+# 
+# cohorts <- enhancers$cohort
+# enhancers <- enhancers$binID
+# 
+# 
+# 
+# df <- c()
+# for (i in 1:length(enhancers)) {
+#   enhancerID = enhancers[i]
+#   x <- get_enhancer_targetGenes(enhancerID, gene_enhancer, ann_PCAWG_ID)
+#   x$cohort = cohorts[i]
+#   x$enhancerID <- enhancerID
+#   df <- rbind(df, x)
+# }
+# 
+# df <- df[!is.na(df$PCAWG_IDs),]
+# df <- df[!duplicated(df),]
+# df$PCAWG_IDs
+# 
+# 
+# df_expression_analysis2 <- c()
+# for (i in 1:nrow(df)) {
+#   cohort = df$cohort[i]
+#   print(cohort)
+#   
+#   cancer_specific_dat <- load_cancer_specific_data(path_donorInfo, cohort, all_mutData, all_sampleInfo)
+#   
+#   
+#   cancerSp_mutData = cancer_specific_dat[[1]]
+#   cancerSp_sampleInfo = cancer_specific_dat[[2]]
+#   
+#   cancer_specific_CN_RNA <- load_cohort_specific_CNV_RNA(complete_count_matrix, complete_cn, cancerSp_sampleInfo)
+#   
+#   
+#   cohort_specific_CN <- cancer_specific_CN_RNA$cns_withRNAseqData
+#   cohort_specific_expression <- cancer_specific_CN_RNA$restricted_count_matrix
+#   n_RNAseq <- cancer_specific_CN_RNA$n_RNAseq
+#   n_CN <- cancer_specific_CN_RNA$n_CN
+#   
+#   candidate_info <- c()
+#   if(n_RNAseq != 0){
+#     
+#     target_gene <- df$PCAWG_IDs[i]
+#     candidateDat <- restrict_CN_RNA_forCandidate(cohort_specific_CN, cohort_specific_expression, target_gene)
+#     
+#     candidate_rna_subset = candidateDat$candidate_rna_subset
+#     candidate_cn_subset = candidateDat$candidate_cn_subset
+#     N_with_both_RNA_CN <- candidateDat$N_with_both_RNA_CN
+#     
+#     candidate = df$enhancerID[i]
+#     if (N_with_both_RNA_CN != 0) {
+#       model_data <- generate_data_glm(candidate, cancerSp_mutData, donorInfo, cohort,
+#                                       candidate_rna_subset, candidate_cn_subset)
+#       
+#       final_df = model_data$final_df
+#       N = model_data$totSamples
+#       nMutated <- model_data$nMutated
+#       nMutated_withRNAseq_CN <- model_data$nMutated_withRNAseq_CN
+#       
+#       if (nMutated_withRNAseq_CN >= 3) {
+#         p_value_CN <- compute_pVal_quassiPois_CN(final_df, cohort, Test = 'LRT')
+#         # p_value_CN <- p_value_CN$`Pr(>Chi)`[2]
+#         p_value_SCNA <- compute_pVal_quassiPois_SCNA(final_df, cohort, Test = 'LRT')
+#         # p_value_SCNA <- p_value_SCNA$`Pr(>Chi)`[2]
+#       } else {
+#         p_value_CN <- NA
+#         p_value_SCNA <- NA
+#       }
+#       
+#       candidate_info <- c(cohort, candidate, n_RNAseq, n_CN, N_with_both_RNA_CN, 
+#                           N, nMutated, nMutated_withRNAseq_CN, p_value_CN,
+#                           p_value_SCNA, target_gene)
+#       
+#       df_expression_analysis2 <- rbind(df_expression_analysis2, candidate_info)
+#     }
+#     
+#   }
+#   
+# }
+# 
+# colnames(df_expression_analysis2) <- c('cohort', 'PCAWG_ID', 'total_RNAseq_data', 'total_CN_data', 
+#                                       'nSamples_with_both_RNAandCN', 'N', 
+#                                       '#Mutated_samples', '#Mutated_samples_withRNAseq_CN',
+#                                       'p_value_CN',
+#                                       'p_value_SCNA', 'target_gene')
+# 
+# df_expression_analysis2 <- as.data.frame(df_expression_analysis2)
+# 
+# 
+# df_expression_analysis2 <- left_join(df_expression_analysis2, ann, by =c('PCAWG_ID' = 'PCAWG_IDs'))
 # 
 # dir.create('../external/BMR/output/Res_reviewerComments/RNAexpression/', recursive = T, showWarnings = F)
-# fwrite(df_expression_analysis, file = '../external/BMR/output/Res_reviewerComments/RNAexpression/shared_drivers_expression.tsv', sep = '\t')
 # 
+# df_expression_analysis <- rbind(df_expression_analysis, df_expression_analysis2)
+# df_expression_analysis <- left_join(df_expression_analysis, drivers, 
+#                                     by = c('cohort', 'PCAWG_ID' = 'binID'))
+# fwrite(df_expression_analysis, 
+#        file = '../external/BMR/output/Res_reviewerComments/RNAexpression/supp_drivers_expression.tsv', 
+#        sep = '\t')
 # 
-# drivers = eMET_unique
-# drivers <- lapply(drivers, function(s){
-#   s[!grepl('enhancers', s)]
-# })
-# 
-# fwrite(df_expression_analysis, file = '../external/BMR/output/Res_reviewerComments/RNAexpression/eMET_drivers_expression.tsv', sep = '\t')
+# ################################# candidates without expression analysis ###################
+# drivers = fread('../external/BMR/output/Res_reviewerComments/driverDiscovery/suppTab_eMET_allCohorts.tsv')
+# x <- fread('../external/BMR/output/Res_reviewerComments/RNAexpression/supp_drivers_expression.tsv')
+# drivers$binID[which(!drivers$binID %in% x$PCAWG_ID)]
+# # "enhancers::chr7:86865600-86866400::NA::NA"           "enhancers::chr9:7613000-7615400::NA::NA"            
+# # "gc19_pc.cds::gencode::AC026310.1::ENSG00000268865.1" "gc19_pc.cds::gencode::ATRX::ENSG00000085224.16"     
+# # "gc19_pc.cds::gencode::DAXX::ENSG00000204209.6"       "enhancers::chr14:106445600-106455000::NA::NA"       
+# # "gc19_pc.cds::gencode::P2RY8::ENSG00000182162.5" 
 
-###################################################################################
-drivers = fread('../external/BMR/output/Res_reviewerComments/driverDiscovery/suppTab_eMET_allCohorts.tsv')
-enhancers <- drivers[which(grepl('enhancers', drivers$binID)),]
-drivers <- as.data.frame(drivers[which(!grepl('enhancers', drivers$binID)),])
 
-all_cohorts <- unique(drivers$cohort)
+################################################################################
+library(ggplot2)
 
-df_expression_analysis <- c()
-for (i in 1:length(all_cohorts)) {
-  cohort = all_cohorts[i]
-  print(cohort)
+
+define_element_type <- function(binID_vector){
+  
+  s <- strsplit(binID_vector, "[::]")
+  GenomicElement <- unlist(lapply(s, function(x){x[1]}))
+  GenomicElements <- unlist(lapply(strsplit(GenomicElement, "[.]"), function(x){x[length(x)]}))
+  gene_name <- unlist(lapply(s, function(x){x[5]}))
+  
+  GEs <- c()
+  for (GenomicElement in GenomicElements) {
+    if (GenomicElement == 'enhancers') {
+      GenomicElement = 'enhancer'
+    } else if (GenomicElement == '3utr') {
+      GenomicElement = "3'UTR"
+    } else if (GenomicElement == '5utr') {
+      GenomicElement = "3'UTR"
+    } else if (GenomicElement == 'cds') {
+      GenomicElement = 'CDS'
+    } else if (GenomicElement == 'promCore') {
+      GenomicElement = 'Core Promoter'
+    } else if (GenomicElement == 'ss') {
+      GenomicElement = 'Splice site'
+    } 
+    
+    GEs <- c(GEs, GenomicElement)
+  }
+  
+  
+  list(GEs, gene_name)
+  
+}
+
+
+expression_boxPlot <- function(path_sample_sheet , path_IDs_maf,
+                               path_donorInfo , path_CN, path_FPKM_UQ, 
+                               candidate, cohort, path_save = '../external/BMR/plots/'){
+  
+  
+  all_mutData <- fread('../../activeProj//extdata/procInput/iDriverInputs/mutData.tsv')
+  all_sampleInfo <- generate_samplesInfo(path_sample_sheet, path_IDs_maf)
+  donorInfo <- fread(path_donorInfo)
+  
+  complete_count_matrix <- as.data.frame(fread(path_FPKM_UQ))
+  complete_cn <- fread(path_CN) # colnames are Tumor sample barcode (the column exists in maf data to match with Donor_ids)
+  
   
   cancer_specific_dat <- load_cancer_specific_data(path_donorInfo, cohort, all_mutData, all_sampleInfo)
-  
-  
   cancerSp_mutData = cancer_specific_dat[[1]]
   cancerSp_sampleInfo = cancer_specific_dat[[2]]
   
@@ -523,222 +541,67 @@ for (i in 1:length(all_cohorts)) {
   
   cohort_specific_CN <- cancer_specific_CN_RNA$cns_withRNAseqData
   cohort_specific_expression <- cancer_specific_CN_RNA$restricted_count_matrix
-  n_RNAseq <- cancer_specific_CN_RNA$n_RNAseq
-  n_CN <- cancer_specific_CN_RNA$n_CN
   
-  candidate_info <- c()
-  if(n_RNAseq != 0){
-    cancerSp_drivers <- drivers[which(drivers$cohort == cohort),]
-    cancerSp_drivers <- cancerSp_drivers$binID
-    for (j in 1:length(cancerSp_drivers)) {
-      
-      candidate = cancerSp_drivers[j]
-      
-      if(length(candidate) != 0 && !is.na(candidate)){
-        print(candidate)
-        
-        candidateDat <- restrict_CN_RNA_forCandidate(cohort_specific_CN, cohort_specific_expression, candidate)
-        
-        candidate_rna_subset = candidateDat$candidate_rna_subset
-        candidate_cn_subset = candidateDat$candidate_cn_subset
-        N_with_both_RNA_CN <- candidateDat$N_with_both_RNA_CN
-        
-        if (N_with_both_RNA_CN != 0) {
-          model_data <- generate_data_glm(candidate, cancerSp_mutData, donorInfo, cohort,
-                                          candidate_rna_subset, candidate_cn_subset)
-          
-          final_df = model_data$final_df
-          N = model_data$totSamples
-          nMutated <- model_data$nMutated
-          nMutated_withRNAseq_CN <- model_data$nMutated_withRNAseq_CN
-          
-          if (nMutated_withRNAseq_CN >= 3) {
-            p_value_CN <- compute_pVal_quassiPois_CN(final_df, cohort, Test = 'LRT')
-            # p_value_CN <- p_value_CN$`Pr(>Chi)`[2]
-            p_value_SCNA <- compute_pVal_quassiPois_SCNA(final_df, cohort, Test = 'LRT')
-            # p_value_SCNA <- p_value_SCNA$`Pr(>Chi)`[2]
-          } else {
-            p_value_CN <- NA
-            p_value_SCNA <- NA
-          }
-          
-          candidate_info <- c(cohort, candidate, n_RNAseq, n_CN, N_with_both_RNA_CN, 
-                              N, nMutated, nMutated_withRNAseq_CN, p_value_CN,
-                              p_value_SCNA)
-          
-          df_expression_analysis <- rbind(df_expression_analysis, candidate_info)
-        }
-        
-      }
-      
-    }
-  }
+  candidateDat <- restrict_CN_RNA_forCandidate(cohort_specific_CN, cohort_specific_expression, candidate)
   
-}
-
-colnames(df_expression_analysis) <- c('cohort', 'PCAWG_ID', 'total_RNAseq_data', 'total_CN_data', 
-                                      'nSamples_with_both_RNAandCN', 'N', 
-                                      '#Mutated_samples', '#Mutated_samples_withRNAseq_CN',
-                                      'p_value_CN',
-                                      'p_value_SCNA')
-df_expression_analysis <- as.data.frame(df_expression_analysis)
-
-
-df_expression_analysis <- left_join(df_expression_analysis, ann, by =c('PCAWG_ID' = 'PCAWG_IDs'))
-df_expression_analysis$target_gene <- NA
-
-
-
-##################################################################################
-
-get_enhancer_targetGenes <- function(enhancerID, gene_enhancer, ann_PCAWG_ID){
+  candidate_rna_subset = candidateDat$candidate_rna_subset
+  candidate_cn_subset = candidateDat$candidate_cn_subset
+  N_with_both_RNA_CN <- candidateDat$N_with_both_RNA_CN
   
-  enhancer_pos <- unlist(lapply(strsplit(enhancerID, "::"),
-                                function(s){
-                                  s[2]
-                                }))
+  x <- generate_data_glm(candidate, cancerSp_mutData, donorInfo, cohort, candidate_rna_subset, candidate_cn_subset)
   
-  gene_enhancer <- gene_enhancer[which(gene_enhancer$enhancer_pos == enhancer_pos),]
-  ensemblIDs_enhancers <- strsplit(gene_enhancer$ENSG_id, ";")
-  names(ensemblIDs_enhancers) <- gene_enhancer$enhancer_pos
+  final_df <- x$final_df
   
-  gene_enhancer_long <- data.frame(enhancer_pos = rep(gene_enhancer$enhancer_pos,
-                                                      unlist(lapply(ensemblIDs_enhancers,
-                                                                    length))),
-                                   ENSG_ids = unlist(ensemblIDs_enhancers))
-  rownames(gene_enhancer_long) <- c()
+  n_mut = nrow(final_df[which(final_df$MUT == 1),])
+  nWT = nrow(final_df[which(final_df$MUT == 0),])
   
-  CDSs <- ann_PCAWG_ID[which(ann_PCAWG_ID$type_of_element == "gc19_pc.cds"),]
-  CDSs$ENSG_ids <- extract_ensembleIDs(CDSs$PCAWG_IDs)
-  CDSs <- CDSs[,c('PCAWG_IDs', 'ENSG_ids')]
+  final_df$MUT <- ifelse(final_df$MUT == 1, sprintf('Mutated (N = %s)',n_mut),
+                         sprintf('Wild type (N = %s)',nWT))
   
-  gene_enhancer_long <- left_join(gene_enhancer_long, CDSs, by = 'ENSG_ids')
-  gene_enhancer_long
+  
+  final_df$CNfactor <- ifelse(final_df$CN == 2, 0, ifelse(final_df$CN > 2, 1, -1))
+  
+  
+  
+  ggplot(final_df, aes(x = MUT, y = FPKM_UQ)) +
+    geom_boxplot(aes(fill = MUT), outlier.shape = NA, fill = NA) +  # Color boxes by MUT and remove outliers
+    geom_point(aes(color = CNfactor), position = position_jitter(width = 0.5), alpha = 0.8, size = 2) +  # Add points for FPKM values and color by CN
+    scale_y_continuous(trans = 'log10') +
+    theme_minimal() +
+    labs(y = "FPKM-UQ", x = '') +
+    theme(
+      axis.text.x = element_text(),
+      axis.title.x = element_blank(),
+      legend.position = "right",
+      legend.title = element_blank(),
+      text = element_text(size = 18),
+      panel.grid = element_blank(),
+      axis.line = element_line(colour = "black"),
+      strip.placement = "outside"
+    ) +
+    # scale_fill_manual(values = c("Wild type" = "#56B4E9", "Mutated" = "#D55E00")) +  # Customize box colors by group
+    scale_color_viridis_c() + scale_color_gradient2(low = "blue", mid = 'skyblue', high = "#e41a1c")  # Color points by CN values with a continuous color scale
+  
+  
+  save_name = define_element_type(c(candidate))
+  save_name = paste0(save_name[[1]], '_', save_name[[2]])
+  ggsave(paste0("boxPlot", save_name,"_expression.png"),
+         device = "png", width = 6, height = 5,
+         bg = 'white',
+         path = path_save)
 }
 
 
 
-path_genhancer_PCAWG <- '../../activeProj/extdata/rawInput/map.enhancer.gene.txt.gz'
-gene_enhancer <- data.frame(fread(path_genhancer_PCAWG,
-                                  header = F, col.names = c("enhancer_pos", "ENSG_id")))
-ann_PCAWG_ID <- fread('../../activeProj/extdata/procInput/ann_PCAWG_ID_complement.csv')
-extract_ensembleIDs <- function(PCAWG_IDs){
-  
-  x <- unlist(lapply(strsplit(PCAWG_IDs, "::"), function(s){
-    unlist(lapply(s[4], function(z){
-      unlist(lapply(strsplit(z, "\\."), function(b){
-        b[1]
-      }))
-    }))
-  }))
-  
-  return(x)
-}
-
-cohorts <- enhancers$cohort
-enhancers <- enhancers$binID
+candidate <- 'gc19_pc.3utr::gencode::ADH1B::ENSG00000196616.8'
+cohort <- 'Liver-HCC'
+expression_boxPlot(path_sample_sheet , path_IDs_maf,
+                   path_donorInfo , path_CN, path_FPKM_UQ, 
+                   candidate, cohort)
 
 
-
-df <- c()
-for (i in 1:length(enhancers)) {
-  enhancerID = enhancers[i]
-  x <- get_enhancer_targetGenes(enhancerID, gene_enhancer, ann_PCAWG_ID)
-  x$cohort = cohorts[i]
-  x$enhancerID <- enhancerID
-  df <- rbind(df, x)
-}
-
-df <- df[!is.na(df$PCAWG_IDs),]
-df <- df[!duplicated(df),]
-df$PCAWG_IDs
-
-
-df_expression_analysis2 <- c()
-for (i in 1:nrow(df)) {
-  cohort = df$cohort[i]
-  print(cohort)
-  
-  cancer_specific_dat <- load_cancer_specific_data(path_donorInfo, cohort, all_mutData, all_sampleInfo)
-  
-  
-  cancerSp_mutData = cancer_specific_dat[[1]]
-  cancerSp_sampleInfo = cancer_specific_dat[[2]]
-  
-  cancer_specific_CN_RNA <- load_cohort_specific_CNV_RNA(complete_count_matrix, complete_cn, cancerSp_sampleInfo)
-  
-  
-  cohort_specific_CN <- cancer_specific_CN_RNA$cns_withRNAseqData
-  cohort_specific_expression <- cancer_specific_CN_RNA$restricted_count_matrix
-  n_RNAseq <- cancer_specific_CN_RNA$n_RNAseq
-  n_CN <- cancer_specific_CN_RNA$n_CN
-  
-  candidate_info <- c()
-  if(n_RNAseq != 0){
-    
-    target_gene <- df$PCAWG_IDs[i]
-    candidateDat <- restrict_CN_RNA_forCandidate(cohort_specific_CN, cohort_specific_expression, target_gene)
-    
-    candidate_rna_subset = candidateDat$candidate_rna_subset
-    candidate_cn_subset = candidateDat$candidate_cn_subset
-    N_with_both_RNA_CN <- candidateDat$N_with_both_RNA_CN
-    
-    candidate = df$enhancerID[i]
-    if (N_with_both_RNA_CN != 0) {
-      model_data <- generate_data_glm(candidate, cancerSp_mutData, donorInfo, cohort,
-                                      candidate_rna_subset, candidate_cn_subset)
-      
-      final_df = model_data$final_df
-      N = model_data$totSamples
-      nMutated <- model_data$nMutated
-      nMutated_withRNAseq_CN <- model_data$nMutated_withRNAseq_CN
-      
-      if (nMutated_withRNAseq_CN >= 3) {
-        p_value_CN <- compute_pVal_quassiPois_CN(final_df, cohort, Test = 'LRT')
-        # p_value_CN <- p_value_CN$`Pr(>Chi)`[2]
-        p_value_SCNA <- compute_pVal_quassiPois_SCNA(final_df, cohort, Test = 'LRT')
-        # p_value_SCNA <- p_value_SCNA$`Pr(>Chi)`[2]
-      } else {
-        p_value_CN <- NA
-        p_value_SCNA <- NA
-      }
-      
-      candidate_info <- c(cohort, candidate, n_RNAseq, n_CN, N_with_both_RNA_CN, 
-                          N, nMutated, nMutated_withRNAseq_CN, p_value_CN,
-                          p_value_SCNA, target_gene)
-      
-      df_expression_analysis2 <- rbind(df_expression_analysis2, candidate_info)
-    }
-    
-  }
-  
-}
-
-colnames(df_expression_analysis2) <- c('cohort', 'PCAWG_ID', 'total_RNAseq_data', 'total_CN_data', 
-                                      'nSamples_with_both_RNAandCN', 'N', 
-                                      '#Mutated_samples', '#Mutated_samples_withRNAseq_CN',
-                                      'p_value_CN',
-                                      'p_value_SCNA', 'target_gene')
-
-df_expression_analysis2 <- as.data.frame(df_expression_analysis2)
-
-
-df_expression_analysis2 <- left_join(df_expression_analysis2, ann, by =c('PCAWG_ID' = 'PCAWG_IDs'))
-
-dir.create('../external/BMR/output/Res_reviewerComments/RNAexpression/', recursive = T, showWarnings = F)
-
-df_expression_analysis <- rbind(df_expression_analysis, df_expression_analysis2)
-df_expression_analysis <- left_join(df_expression_analysis, drivers, 
-                                    by = c('cohort', 'PCAWG_ID' = 'binID'))
-fwrite(df_expression_analysis, 
-       file = '../external/BMR/output/Res_reviewerComments/RNAexpression/supp_drivers_expression.tsv', 
-       sep = '\t')
-
-################################# candidates without expression analysis ###################
-drivers = fread('../external/BMR/output/Res_reviewerComments/driverDiscovery/suppTab_eMET_allCohorts.tsv')
-x <- fread('../external/BMR/output/Res_reviewerComments/RNAexpression/supp_drivers_expression.tsv')
-drivers$binID[which(!drivers$binID %in% x$PCAWG_ID)]
-# "enhancers::chr7:86865600-86866400::NA::NA"           "enhancers::chr9:7613000-7615400::NA::NA"            
-# "gc19_pc.cds::gencode::AC026310.1::ENSG00000268865.1" "gc19_pc.cds::gencode::ATRX::ENSG00000085224.16"     
-# "gc19_pc.cds::gencode::DAXX::ENSG00000204209.6"       "enhancers::chr14:106445600-106455000::NA::NA"       
-# "gc19_pc.cds::gencode::P2RY8::ENSG00000182162.5" 
+candidate <- 'gc19_pc.promCore::gencode::TPTE::ENSG00000166157.12'
+cohort <- 'Pancan-no-skin-melanoma-lymph'
+expression_boxPlot(path_sample_sheet , path_IDs_maf,
+                   path_donorInfo , path_CN, path_FPKM_UQ, 
+                   candidate, cohort)
