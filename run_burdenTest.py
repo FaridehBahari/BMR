@@ -7,10 +7,14 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 parser = argparse.ArgumentParser(description='Perform burden test for a specific BMR setting based on the path to the directory containing predictions')
 parser.add_argument('dir_path', type=str, help='the path to the parent directory containing sim_setting and predictions')
+parser.add_argument('cancer_type', type=str, help='the cohort of interest')
 args = parser.parse_args()
+
 dir_path = args.dir_path
+cancer_type = args.cancer_type
     
-perform_burdenTest(dir_path)
+perform_burdenTest(dir_path, cancer_type)
+
 
 
 ################### Run the following lines of code for cohort-specific inference
