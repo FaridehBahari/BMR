@@ -235,6 +235,44 @@ for path_pval_matrix in path_pval_matrixs:
     qval_df = convert_pvals_to_qvals(path_pval_matrix)
 
 
+def convert_pvals_to_neglog10_qvals(path_pval_matrix):
+    # Load the CSV file into a DataFrame
+    pval_df = pd.read_csv(path_pval_matrix, index_col=0)
+    
+    # Convert all values to numeric, coercing errors to NaN
+    pval_df = pval_df.apply(pd.to_numeric, errors='coerce')
+    
+    # Flatten the DataFrame values to apply FDR adjustment
+    pval_flat = pval_df.values.flatten()
+    non_nan_mask = ~np.isnan(pval_flat)  # Mask of non-NaN values
+    
+    # Apply FDR correction only to non-NaN values
+    _, qval_flat_non_nan, _, _ = multipletests(pval_flat[non_nan_mask], alpha=0.05, method='fdr_bh')
+    
+    # Create a new array to store q-values, inserting NaNs where necessary
+    qval_flat = np.full(pval_flat.shape, np.nan)
+    qval_flat[non_nan_mask] = qval_flat_non_nan
+    
+    # Transform q-values to -log10 scale
+    neglog10_qval_flat = -np.log10(qval_flat)
+    
+    # Reshape back to the original DataFrame format
+    neglog10_qval_df = pd.DataFrame(neglog10_qval_flat.reshape(pval_df.shape), columns=pval_df.columns, index=pval_df.index)
+    
+    # Define the output path for the -log10(q-values) file
+    output_path = path_pval_matrix.replace("p_value", "neglog10_q_value")
+    
+    # Save the -log10(q-values) DataFrame to a new CSV file
+    neglog10_qval_df.to_csv(output_path)
+    
+    return neglog10_qval_df
+
+path_pval_matrixs = ["../external/BMR/output/Res_reviewerComments/significance_of_models/p_value_matrix_model_binGeneration.csv", 
+                     '../external/BMR/output/Res_reviewerComments/significance_of_models/p_value_matrix_model_DS.csv',
+                     "../external/BMR/output/Res_reviewerComments/significance_of_models/p_value_matrix_model_dimRed.csv",
+                     '../external/BMR/output/Res_reviewerComments/significance_of_models/p_value_matrix_mutStatus.csv']
+for path_pval_matrix in path_pval_matrixs:
+    convert_pvals_to_neglog10_qvals(path_pval_matrix)
 
 ##############################################################################
 ##############################################################################
@@ -258,14 +296,14 @@ def plot_p_value_heatmap(path_matrix, path_save):
         p_value_matrix,
         mask=mask,  # Apply the mask to avoid redundant comparisons
         annot=True,  # Display p-values in each cell
-        fmt=".2f",   # Show values with 3 decimal places
+        fmt=".1f",   # Show values with 3 decimal places
         cmap="coolwarm",  # Color map for visual effect
-        cbar_kws={'label': 'q-value'},  # Label for color bar
+        cbar_kws={'label': '-log10(q-value)'},  # Label for color bar
         square=False,  # Rectangular shape
         xticklabels=True,
         yticklabels=True,
-        annot_kws={"size": 10},  # Font size for cell annotations
-        vmin=0, vmax=1,
+        annot_kws={"size": 12},  # Font size for cell annotations
+        # vmin=1, vmax=14,
         ax=ax  # Pass the axis to sns.heatmap
     )
     
@@ -297,18 +335,25 @@ def plot_p_value_heatmap(path_matrix, path_save):
 
 # Example usage
 plot_p_value_heatmap(
-    path_matrix="../external/BMR/output/Res_reviewerComments/significance_of_models/q_value_matrix_model_binGeneration.csv",
-    path_save="../external/BMR/output/Res_reviewerComments/significance_of_models/q_value_matrix_model_binGeneration.png"
+    path_matrix="../external/BMR/output/Res_reviewerComments/significance_of_models/neglog10_q_value_matrix_model_binGeneration.csv",
+    path_save="../external/BMR/output/Res_reviewerComments/significance_of_models/neglog10_q_value_matrix_model_binGeneration.png"
+)
+
+
+plot_p_value_heatmap(
+    path_matrix="../external/BMR/output/Res_reviewerComments/significance_of_models/neglog10_q_value_matrix_model_DS.csv",
+    path_save="../external/BMR/output/Res_reviewerComments/significance_of_models/neglog10_q_value_matrix_model_DS.png"
+)
+
+
+plot_p_value_heatmap(
+    path_matrix="../external/BMR/output/Res_reviewerComments/significance_of_models/neglog10_q_value_matrix_model_dimRed.csv",
+    path_save="../external/BMR/output/Res_reviewerComments/significance_of_models/neglog10_q_value_matrix_model_dimRed.png"
 )
 
 
 
 plot_p_value_heatmap(
-    path_matrix="../external/BMR/output/Res_reviewerComments/significance_of_models/q_value_matrix_model_DS.csv",
-    path_save="../external/BMR/output/Res_reviewerComments/significance_of_models/q_value_matrix_model_DS.png"
-)
-
-plot_p_value_heatmap(
-    path_matrix="../external/BMR/output/Res_reviewerComments/significance_of_models/q_value_matrix_model_dimRed.csv",
-    path_save="../external/BMR/output/Res_reviewerComments/significance_of_models/q_value_matrix_model_dimRed.png"
-)
+    path_matrix='../external/BMR/output/Res_reviewerComments/significance_of_models/neglog10_q_value_matrix_mutStatus.csv',
+  path_save='../external/BMR/output/Res_reviewerComments/significance_of_models/neglog10_q_value_matrix_mutStatus.png'
+)                   
