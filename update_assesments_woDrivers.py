@@ -40,7 +40,16 @@ sim_files = ['../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/var_size/
                   '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS600k/GBM/sim_setting.ini',
                   '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS300k/GBM/sim_setting.ini',
                   '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS100k/GBM/sim_setting.ini',
-                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS50k/GBM/sim_setting.ini'
+                  '../external/BMR/output/with_RepliSeq_HiC/DownSampling/DS50k/GBM/sim_setting.ini',
+                  "../external/BMR/output/dimReduction_effect/PCA/GBM/sim_setting.ini",
+                  "../external/BMR/output/dimReduction_effect/PCA/RF/sim_setting.ini",
+                  "../external/BMR/output/dimReduction_effect/PCA/nn_poisLoss/sim_setting.ini",
+                  "../external/BMR/output/dimReduction_effect/PCA/nn_mseLoss/sim_setting.ini", 
+                 
+                 "../external/BMR/output/dimReduction_effect/AE/GBM/sim_setting.ini",
+                 "../external/BMR/output/dimReduction_effect/AE/RF/sim_setting.ini",
+                 "../external/BMR/output/dimReduction_effect/AE/nn_poisLoss/sim_setting.ini",
+                 "../external/BMR/output/dimReduction_effect/AE/nn_mseLoss/sim_setting.ini"
                  ]
 
 for sim_file_path in sim_files:
@@ -157,6 +166,26 @@ for cohort in cohorts:
     
     assessment.to_csv(f'../external/BMR/output/reviewerComments/{cohort}/eMET/eMET_assessment.tsv', sep = '\t')
 
+#################################################################################
+import pandas as pd
+from performance.assessModels import assess_model
+# Load the CSV file into a DataFrame
+df = pd.read_csv('../external/BMR/procInput/ann_PCAWG_ID_complement.csv', sep=',')
+filtered_df = df[(df['in_CGC'] | df['in_CGC_literature'] | df['in_CGC_new'] | df['in_oncoKB'] | df['in_pcawg'])]
+drivers = filtered_df['PCAWG_IDs']
+
+
+obs_pred_rates_path = '../external/BMR/output/dimReduction_effect/AE/eMET/eMET_100_predTest.tsv'
+
+Y_pred = pd.read_csv(obs_pred_rates_path, sep = "\t", header=0, index_col='binID')
+
+obs_pred_rates = Y_pred.loc[~(Y_pred.index).isin(drivers)]
+
+model_name = 'eMET'
+Nr_pair_acc = 100000
+assessment = assess_model(obs_pred_rates.pred_rates, obs_pred_rates.obs_rates,Nr_pair_acc, model_name, per_element=True)
+
+assessment.to_csv('../external/BMR/output/dimReduction_effect/AE/eMET/eMET_assessment.tsv', sep = '\t')
 
 ############################## cancer-specific intergenic SNVs #############################
 import time
@@ -397,7 +426,7 @@ for category in categories:
 
 all_ratio_dfs.to_csv('../external/BMR/output/eMET_GroupImportance/importanceRatios.csv', sep=",") 
 
-################################# repeated train-test ######################################
+################################# repeated train-test DS ######################################
 # Update to include MAE
 
 import pandas as pd
@@ -405,26 +434,94 @@ from performance.assessModels import assess_model, read_obs, read_pred
 # import re
 
 Y_obs_all_intergenic = read_obs('../external/BMR/rawInput/responseTabs_bedtools/Pan_Cancer/var_bins.tsv', True)
-DS = 'DS50k'
-model = 'nn_poisLoss'
+# DS = 'DS50k'
+# model = 'nn_poisLoss'
 n_repeat = 10
-pred_paths = []
-for i in range(n_repeat):
-    rep_number = i+1
-    pred_path = f'../external/BMR/output/with_RepliSeq_HiC/DownSampling/{DS}/{model}/rep_train_test/{model}_predTest{rep_number}.tsv'
-    
-    print(pred_path)
-    
-    Y_pred = read_pred(pred_path)
-    Y_obs_unseen = Y_obs_all_intergenic.loc[Y_pred.index]
-    
-    parts = pred_path.split('/')
-    
-    model_name = parts[-3]
-    Nr_pair_acc = 100000
-    assessment = assess_model(Y_pred, Y_obs_unseen, 
-                  Nr_pair_acc, model_name, per_element=False)
-    
-    # rep_number = re.findall(r'\d+', pred_path)[0]
-    save_ass = '/'.join(parts[:-1]) + '/'  + model_name + '_M' + str(rep_number) + '_assessment.tsv'
-    assessment.to_csv(save_ass, sep = '\t')
+
+SampleSizes = ['FullSet', 'DS1M', 'DS800k', 'DS600k', 'DS300k', 'DS100k', 'DS50k']
+models = ['GBM', 'RF', 'nn_poisLoss', 'nn_mseLoss']
+for DS in SampleSizes:
+    for model in models:
+        pred_paths = []
+        for i in range(n_repeat):
+            rep_number = i+1
+            pred_path = f'../external/BMR/output/with_RepliSeq_HiC/DownSampling/{DS}/{model}/rep_train_test/{model}_predTest{rep_number}.tsv'
+            
+            print(pred_path)
+            
+            Y_pred = read_pred(pred_path)
+            Y_obs_unseen = Y_obs_all_intergenic.loc[Y_pred.index]
+            
+            parts = pred_path.split('/')
+            
+            model_name = parts[-3]
+            Nr_pair_acc = 100000
+            assessment = assess_model(Y_pred, Y_obs_unseen, 
+                          Nr_pair_acc, model_name, per_element=False)
+            
+            # rep_number = re.findall(r'\d+', pred_path)[0]
+            save_ass = '/'.join(parts[:-1]) + '/'  + model_name + '_M' + str(rep_number) + '_assessment.tsv'
+            assessment.to_csv(save_ass, sep = '\t')
+
+
+
+
+###################### update summary repeated train-test DS###################
+from models.repeated_train_test import save_metrics_summary
+
+SampleSizes = ['FullSet', 'DS1M', 'DS800k', 'DS600k', 'DS300k', 'DS100k', 'DS50k']
+models = ['GBM', 'RF', 'nn_poisLoss', 'nn_mseLoss']
+for DS in SampleSizes:
+    for model in models:
+        dir_path = f'../external/BMR/output/with_RepliSeq_HiC/DownSampling/{DS}/{model}/rep_train_test/'
+        # save the model metrics summary:
+        save_metrics_summary(dir_path)
+
+################################# update train-test assessmnents without drivers ######################################
+# Update to include MAE
+
+import pandas as pd
+from performance.assessModels import assess_model, read_obs, read_pred
+# import re
+
+Y_obs_all_intergenic = read_obs('../external/BMR/rawInput/responseTabs/Pan_Cancer/var_bins.tsv', True)
+
+n_repeat = 10
+
+binSizes = [ '1M', '100k', '50k', '10k'] #'var_size',
+models = ['GBM', 'RF', 'nn_poisLoss', 'nn_mseLoss']
+for BIN in binSizes:
+    for model in models:
+        pred_paths = []
+        for i in range(n_repeat):
+            rep_number = i+1
+            pred_path = f'../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/{BIN}/{model}/rep_train_test/{model}_predTest{rep_number}.tsv'
+            
+            print(pred_path)
+            
+            Y_pred = read_pred(pred_path)
+            Y_obs_unseen = Y_obs_all_intergenic.loc[Y_pred.index]
+            
+            parts = pred_path.split('/')
+            
+            model_name = parts[-3]
+            Nr_pair_acc = 100000
+            assessment = assess_model(Y_pred, Y_obs_unseen, 
+                          Nr_pair_acc, model_name, per_element=False)
+            
+            # rep_number = re.findall(r'\d+', pred_path)[0]
+            save_ass = '/'.join(parts[:-1]) + '/'  + model_name + '_M' + str(rep_number) + '_assessment.tsv'
+            assessment.to_csv(save_ass, sep = '\t')
+
+
+
+###################### update summary repeated train-test bin-model###################
+from models.repeated_train_test import save_metrics_summary
+
+bins = ['var_size', '1M', '100k', '50k', '10k']
+models = ['GBM', 'RF', 'nn_poisLoss', 'nn_mseLoss']
+for Bin in bins:
+    for model in models:
+        dir_path = f'../external/BMR/output/with_RepliSeq_HiC/bin_size_effect/{Bin}/{model}/rep_train_test/'
+        # save the model metrics summary:
+        save_metrics_summary(dir_path)
